@@ -1,5 +1,12 @@
 # Pachinko Simulation Platform
 
+The current playable prototype combines a deterministic Rapier pachinko board
+with an original six-second robot-anime lottery story. The story is rendered as
+96 local JPEG frames at 16 fps; it uses no background music and synchronizes
+procedural launch, impact, lock-on, silence, confirmation, and RUSH sound effects.
+Normal play launches left at calibrated power, while a jackpot switches the same
+launcher to the dedicated right-side RUSH route for 100 shots.
+
 Physics-first browser pachinko simulation using TypeScript, Rapier 2D WASM, React, and PixiJS.
 
 The prototype board is a reference-based approximation and does not reproduce official artwork or claim measured nail positions.
