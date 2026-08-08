@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@pachinko/board-schema": ["packages/board-schema/src/index.ts"],
+      "@pachinko/event-system": ["packages/event-system/src/index.ts"],
+      "@pachinko/physics-core": ["packages/physics-core/src/index.ts"],
+      "@pachinko/renderer-pixi": ["packages/renderer-pixi/src/index.ts"],
+      "@pachinko/input-system": ["packages/input-system/src/index.ts"],
+      "@pachinko/effect-system": ["packages/effect-system/src/index.ts"],
+      "@pachinko/economy-core": ["packages/economy-core/src/index.ts"],
+      "@pachinko/simulation-runner": ["tools/simulation-runner/src/index.ts"],
+      "@pachinko/board-editor": ["tools/board-editor/src/index.ts"],
+      "@pachinko/calibration": ["tools/calibration/src/index.ts"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true
+  }
+}

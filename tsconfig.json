@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/board-schema" },
+    { "path": "packages/event-system" },
+    { "path": "packages/physics-core" },
+    { "path": "packages/renderer-pixi" },
+    { "path": "packages/input-system" },
+    { "path": "packages/effect-system" },
+    { "path": "packages/economy-core" },
+    { "path": "tools/simulation-runner" },
+    { "path": "tools/board-editor" },
+    { "path": "tools/calibration" },
+    { "path": "apps/simulator" }
+  ]
+}

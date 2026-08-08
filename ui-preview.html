@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pachinko Physics Laboratory — UI Preview</title>
+  <style>
+    :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#dcebf0;background:#061116;color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-width:320px;background:radial-gradient(circle at 30% -10%,#143642 0,#07151b 34%,#050d11 100%)}button,input,select{font:inherit}.shell{height:100vh;padding:18px;display:flex;flex-direction:column}.topbar{display:flex;align-items:flex-end;justify-content:space-between;max-width:1440px;width:100%;margin:0 auto 14px}.eyebrow{margin:0;color:#55c8ee;font-size:10px;letter-spacing:.2em}.title{margin:3px 0 0;font-size:clamp(20px,3vw,31px);font-weight:650;letter-spacing:-.02em}.badge{padding:7px 10px;border:1px solid #815d28;border-radius:999px;background:#33250f;color:#f6c96c;font-size:11px}.layout{width:100%;max-width:1440px;min-height:0;flex:1;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px}.board-card,.sidebar{border:1px solid #24414d;border-radius:12px;background:linear-gradient(160deg,#0c2029,#081820);box-shadow:0 18px 55px #0008;overflow:hidden}.board-card{display:flex;flex-direction:column;min-height:0}.board-stage{position:relative;flex:1;display:grid;place-items:center;min-height:0;background:linear-gradient(#071319aa,#0b1b22aa),repeating-linear-gradient(90deg,transparent 0 49px,#1d39431c 50px),repeating-linear-gradient(0deg,transparent 0 49px,#1d39431c 50px)}.board-stage svg{height:min(100%,820px);max-width:100%;filter:drop-shadow(0 14px 24px #000b)}.preview-note{position:absolute;left:14px;top:14px;max-width:260px;padding:9px 11px;border:1px solid #5c4930;background:#211c12dd;border-radius:7px;color:#e8c987;font-size:11px;line-height:1.45}.caption{display:flex;justify-content:space-between;padding:9px 13px;border-top:1px solid #24414d;color:#7f9faa;font-size:11px}.sidebar{overflow:auto}.panel{padding:14px}.section+.section{border-top:1px solid #23404b;margin-top:15px;padding-top:14px}.section-title{margin:0 0 10px;color:#8eb9c8;font-size:11px;letter-spacing:.12em;text-transform:uppercase}.label{display:grid;gap:6px;margin:9px 0;color:#99b6c1;font-size:11px}.power-row{display:flex;justify-content:space-between}.power{color:#70d0ef;font-family:ui-monospace,monospace}.slider{width:100%;accent-color:#41bce5}.select{width:100%;padding:8px;background:#102d38;border:1px solid #315565;border-radius:6px;color:#e3f0f4}.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.button{padding:8px 11px;border:1px solid #39758c;border-radius:6px;background:#123643;color:#def1f6;font-size:11px;cursor:pointer}.button.primary{background:#0f6682;border-color:#4bbce5}.button.active{background:#74441f;border-color:#ce8b44}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px;font:10px ui-monospace,monospace;color:#77c9e6}.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px}.check{display:flex;align-items:center;gap:5px;color:#91adb7;font-size:10px}.check input{accent-color:#4ec8ef}.tests{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.test-button{padding:8px 3px;border:1px solid #365d6c;border-radius:5px;background:#102a34;color:#bbd5de;font-size:9px}.calibration{margin:14px;padding:12px;border:1px solid #294956;border-radius:8px;background:#09181e}.calibration summary{cursor:pointer;font-size:11px;font-weight:650}.drawer-button{display:none}.mobile-overlay{display:none}@media(max-width:760px){.shell{padding:10px}.layout{display:block}.board-card{height:100%}.sidebar{display:none}.drawer-button{display:block;padding:8px 12px;border:1px solid #39758c;border-radius:6px;background:#123643;color:#def1f6}.sidebar.open{display:block;position:fixed;z-index:10;right:0;top:0;bottom:0;width:min(88vw,370px);border-radius:0}.preview-note{max-width:210px}.caption{font-size:9px}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar"><div><p class="eyebrow">PHYSICS LAB / PHASE 1</p><h1 class="title">Pachinko Flow Simulator</h1></div><div><span class="badge">STATIC UI PREVIEW</span> <button class="drawer-button" id="drawer">Controls</button></div></header>
+  <div class="layout">
+    <section class="board-card">
+      <div class="board-stage">
+        <div class="preview-note"><strong>物理演算は停止中</strong><br>これは依存不要のUI確認用です。玉の偽軌道は表示していません。</div>
+        <svg viewBox="0 0 500 500" aria-label="Reference-based approximation board preview">
+          <defs><radialGradient id="plate"><stop offset="0" stop-color="#173c48"/><stop offset="1" stop-color="#0a2029"/></radialGradient><pattern id="pins" width="29" height="29" patternUnits="userSpaceOnUse" patternTransform="rotate(-2)"><circle cx="7" cy="7" r="1.55" fill="#d5e5e9" stroke="#55717b" stroke-width=".45"/><circle cx="21" cy="21" r="1.35" fill="#c2d6dc"/></pattern></defs>
+          <rect x="8" y="8" width="484" height="484" rx="235" fill="url(#plate)" stroke="#426571" stroke-width="4"/>
+          <path d="M468 461L468 59Q465 42 444 40L392 34M447 470L447 61Q440 55 422 52" fill="none" stroke="#8baab4" stroke-width="4"/>
+          <path d="M392 34Q250 9 128 67Q73 127 73 204M430 196Q421 308 391 390M72 195Q83 304 111 390" fill="none" stroke="#6e919e" stroke-width="4"/>
+          <path d="M105 100Q250 60 398 105L382 425Q250 462 118 425Z" fill="url(#pins)" opacity=".9"/>
+          <circle cx="250" cy="250" r="64" fill="#07141a" stroke="#31525f" stroke-width="3"/>
+          <circle cx="250" cy="250" r="48" fill="#0d2832" stroke="#244653"/>
+          <path d="M220 348L229 377M280 348L271 377" stroke="#dae7e9" stroke-width="2"/>
+          <rect x="237" y="381" width="26" height="22" rx="3" fill="#36c87633" stroke="#52d98c"/>
+          <text x="250" y="396" text-anchor="middle" fill="#7af0aa" font-size="8">START</text>
+          <rect x="12" y="471" width="476" height="21" fill="#e45c6030" stroke="#e86c71"/>
+          <text x="250" y="485" text-anchor="middle" fill="#ff9a9d" font-size="8">OUT SENSOR</text>
+          <circle cx="250" cy="250" r="6" fill="#7cc8df33" stroke="#7cc8df"/><path d="M244 250h12M250 244v12" stroke="#7cc8df" stroke-width=".8"/>
+        </svg>
+      </div>
+      <footer class="caption"><span>eva15_inspired_physics_v1</span><span>Reference-based approximation / 500 × 500 mm</span></footer>
+    </section>
+    <div class="sidebar" id="sidebar">
+      <div class="panel">
+        <section class="section"><h2 class="section-title">Launcher</h2><label class="label"><span class="power-row"><span>Power</span><output class="power" id="power-output">0.68</output></span><input class="slider" id="power" type="range" min="0" max="1" step="0.01" value="0.68"></label><label class="label">Fire Rate<select class="select"><option>25 balls/min</option><option>50 balls/min</option><option>75 balls/min</option><option selected>100 balls/min (REALISTIC)</option></select></label><div class="buttons"><button class="button">Fire</button><button class="button primary" id="auto">START FIRING</button></div></section>
+        <section class="section"><h2 class="section-title">Simulation</h2><label class="label">Speed<select class="select"><option>1x</option><option>2x</option><option>4x</option><option>8x</option><option>16x</option></select></label><label class="check"><input type="checkbox" checked>CCD</label><div class="metrics"><span>FPS —</span><span>Physics 240 Hz</span><span>Step — ms</span><span>Active 0</span><span>Launched 0</span><span>START 0</span><span>OUT 0</span></div></section>
+        <section class="section"><h2 class="section-title">Debug Draw</h2><div class="checks"><label class="check"><input type="checkbox" checked>Collider</label><label class="check"><input type="checkbox" checked>Sensor</label><label class="check"><input type="checkbox">Velocity Vector</label><label class="check"><input type="checkbox">Angular Velocity</label><label class="check"><input type="checkbox">Collision Normal</label><label class="check"><input type="checkbox">Collision Point</label><label class="check"><input type="checkbox" checked>Ball Trail</label><label class="check"><input type="checkbox">Ball ID</label><label class="check"><input type="checkbox">Nail ID</label></div></section>
+        <section class="section"><h2 class="section-title">Automated Simulation</h2><div class="tests"><button class="test-button">100 BALL TEST</button><button class="test-button">1000 BALL TEST</button><button class="test-button">10000 BALL TEST</button></div></section>
+      </div>
+      <details class="calibration"><summary>Calibration / Simple Board Editor</summary><p style="font-size:10px;color:#86a4af;line-height:1.5">Gravity、Ball、Nail、Launcher、Physics Hz、釘選択・移動・追加・削除、Board JSON入出力を配置します。</p></details>
+    </div>
+  </div>
+</main>
+<script>
+  const slider=document.querySelector('#power'),output=document.querySelector('#power-output');slider.addEventListener('input',()=>output.textContent=Number(slider.value).toFixed(2));
+  const auto=document.querySelector('#auto');auto.addEventListener('click',()=>{const active=auto.classList.toggle('active');auto.textContent=active?'STOP FIRING':'START FIRING'});
+  document.querySelector('#drawer').addEventListener('click',()=>document.querySelector('#sidebar').classList.toggle('open'));
+</script>
+</body>
+</html>

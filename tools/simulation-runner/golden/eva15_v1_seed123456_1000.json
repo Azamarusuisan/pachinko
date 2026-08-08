@@ -1,0 +1,28 @@
+{
+  "scenario": {
+    "boardId": "eva15_inspired_physics_v1",
+    "boardVersion": "1.0.1-reference-approximation",
+    "physicsVersion": "phase1-rapier-0.19.3-v1",
+    "seed": 123456,
+    "balls": 1000,
+    "launchPower": 0.68,
+    "fireRate": 100,
+    "physicsHz": 240,
+    "ccdEnabled": true
+  },
+  "measuredAt": "2026-08-08T12:53:43.300Z",
+  "metrics": {
+    "startRate": 0.073,
+    "averageCollisionCount": 6.058,
+    "averageLifetime": 0.6572499999999972,
+    "leftRouteRate": 0.018,
+    "centerRouteRate": 0.137,
+    "rightRouteRate": 0.845
+  },
+  "tolerances": {
+    "startRate": 0.005,
+    "averageCollisionCount": 0.25,
+    "averageLifetime": 0.05,
+    "routeRate": 0.01
+  }
+}

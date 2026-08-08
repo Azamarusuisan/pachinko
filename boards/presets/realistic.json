@@ -1,0 +1,7 @@
+{
+  "id": "REALISTIC",
+  "fireRateBallsPerMinute": 100,
+  "simulationSpeed": 1,
+  "ccdEnabled": true,
+  "physicsHz": 240
+}

@@ -1,0 +1,1 @@
+{"name":"@pachinko/renderer-pixi","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@pachinko/board-schema":"0.1.0","@pachinko/physics-core":"0.1.0","pixi.js":"8.13.2"}}
