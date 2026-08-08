@@ -15,14 +15,14 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[2]
 BOARD_PATH = ROOT / "boards/prototype/eva15_inspired_physics_v1.json"
 BLEND_PATH = ROOT / "assets/blender/eva15_reference_cabinet.blend"
-GLB_PATH = ROOT / "assets/models/eva15_reference_cabinet.glb"
+GLB_PATH = ROOT / "assets/models/eva15_reference_cabinet_blender.glb"
 PREVIEW_PATH = ROOT / "assets/images/eva15_reference_cabinet.png"
 MM = 0.001
 
 
 def material(name, color, metallic=0.0, roughness=0.45, transmission=0.0):
     mat = bpy.data.materials.new(name)
-    mat.diffuse_color = (*color, color[3])
+    mat.diffuse_color = color
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = color
@@ -176,7 +176,7 @@ scene = bpy.context.scene
 scene["asset_role"] = "visual_only"
 scene["collision_source"] = str(BOARD_PATH.relative_to(ROOT))
 scene["reference_policy"] = "reference-based approximation; no official artwork"
-scene.render.engine = "BLENDER_EEVEE_NEXT"
+scene.render.engine = "BLENDER_EEVEE"
 scene.render.resolution_x = 900
 scene.render.resolution_y = 1100
 scene.render.resolution_percentage = 100
