@@ -1,5 +1,6 @@
 #!/bin/zsh
 set -e
+exec > >(tee /private/tmp/pachinko-github-push.log) 2>&1
 cd /Users/stork/pachinko-sim
 eval "$(/opt/homebrew/bin/brew shellenv)"
 if ! command -v gh >/dev/null 2>&1; then
