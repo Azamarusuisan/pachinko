@@ -7,3 +7,8 @@ test-results/
 *.tsbuildinfo
 .DS_Store
 *.blend1
+experiments/*.json
+research-data/
+artifacts/
+videos/**/.thumbnails/
+videos/**/snapshots-hermes/

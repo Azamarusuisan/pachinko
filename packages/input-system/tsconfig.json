@@ -1,1 +1,1 @@
-{"extends":"../../tsconfig.base.json","compilerOptions":{"outDir":"dist","rootDir":"src"},"include":["src/**/*.ts"],"references":[{"path":"../physics-core"}]}
+{"extends":"../../tsconfig.base.json","compilerOptions":{"outDir":"dist","rootDir":"src"},"include":["src/**/*.ts"],"references":[{"path":"../board-schema"},{"path":"../physics-core"}]}

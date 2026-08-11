@@ -1,1 +1,1 @@
-{"name":"@pachinko/calibration","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@pachinko/board-schema":"0.1.0"}}
+{"name":"@pachinko/calibration","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@pachinko/board-schema":"0.1.0","zod":"4.0.17"}}

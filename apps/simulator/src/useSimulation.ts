@@ -1,11 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BoardDefinition } from "@pachinko/board-schema";
+import { createLaunchCommand, launcherConfigFromBoard } from "@pachinko/input-system";
 import { FixedTimestepAccumulator, PachinkoPhysicsEngine, type SimulationSnapshot } from "@pachinko/physics-core";
 import { PixiBoardRenderer, DEFAULT_DEBUG_DRAW, type DebugDrawOptions } from "@pachinko/renderer-pixi";
 import { PlayAudio } from "./PlayAudio.js";
+import {
+  IDLE_PRESENTATION,
+  LOTTERY_TIMING,
+  RUSH_SHOTS,
+  consumeLotteryStart,
+  consumeRushShot,
+  createLotteryOutcome,
+  dequeueLotteryHold,
+  lotteryElapsedAfterPush,
+  lotteryElapsedAwaitingPush,
+  lotteryAudioCueAllowed,
+  lotteryFinishAt,
+  lotteryPresentationAt,
+  presentationKey,
+  type LotteryOutcome,
+  type LotteryAudioCueId,
+  type LotteryPresentation,
+  type LotteryClockSnapshot,
+  type LotteryClockReader,
+  type HoldColor,
+  type PlayPhase,
+} from "./lotteryTimeline.js";
 
-export type PlayPhase = "NORMAL" | "RUSH";
-export type LotteryPhase = "IDLE" | "CHANCE" | "REACH" | "FREEZE" | "RESULT" | "JACKPOT";
+export type { PlayPhase } from "./lotteryTimeline.js";
 
 export interface SimulationControls {
   readonly power: number;
@@ -28,7 +50,32 @@ export interface RuntimeStats {
   readonly attacker: number;
 }
 
-const EMPTY: SimulationSnapshot = { tick: 0, simulationTime: 0, balls: [], contacts: [] };
+const EMPTY: SimulationSnapshot = { tick: 0, simulationTime: 0, balls: [], contacts: [], mechanisms: [] };
+
+interface ActiveLottery {
+  readonly outcome: LotteryOutcome;
+  startedAt: number;
+  pushed: boolean;
+  readonly drawId: number;
+  readonly playedCues: Set<string>;
+  lastPresentationKey: string;
+}
+
+const INACTIVE_LOTTERY_CLOCK: LotteryClockSnapshot = { active: false, drawId: 0, elapsedMs: 0, pushed: false };
+
+function lotteryClockSnapshot(active: ActiveLottery, now: number): LotteryClockSnapshot {
+  const wallElapsed = Math.max(0, now - active.startedAt);
+  return {
+    active: true,
+    drawId: active.drawId,
+    elapsedMs: active.outcome.reach && !active.pushed ? lotteryElapsedAwaitingPush(wallElapsed) : wallElapsed,
+    pushed: active.pushed,
+  };
+}
+
+function scheduleConfiguredLaunch(engine: PachinkoPhysicsEngine, board: BoardDefinition, strength: number, sequence: number): void {
+  engine.schedule(createLaunchCommand(launcherConfigFromBoard(board, strength), engine.tick, sequence));
+}
 
 export function useSimulation(board: BoardDefinition, controls: SimulationControls) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -43,18 +90,31 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
   const rushShotsRef = useRef(0);
   const lotteryStateRef = useRef(0x15e7a319);
   const audioRef = useRef<PlayAudio | null>(null);
-  const lotteryTimersRef = useRef<number[]>([]);
+  const activeLotteryRef = useRef<ActiveLottery | null>(null);
+  const lastLotteryClockRef = useRef<LotteryClockSnapshot>(INACTIVE_LOTTERY_CLOCK);
+  const playLotteryRef = useRef<((rawState: number, now?: number) => void) | null>(null);
   const holdQueueRef = useRef<number[]>([]);
   const lotteryBusyRef = useRef(false);
   const [phase, setPhase] = useState<PlayPhase>("NORMAL");
   const drawIdRef = useRef(0);
-  const [lottery, setLottery] = useState<{ readonly phase: LotteryPhase; readonly digits: readonly [number, number, number]; readonly jackpot: boolean; readonly drawId: number }>({ phase: "IDLE", digits: [0, 0, 0], jackpot: false, drawId: 0 });
-  const [holds, setHolds] = useState(0);
+  const [lottery, setLottery] = useState<LotteryPresentation>(IDLE_PRESENTATION);
+  const [holdColors, setHoldColors] = useState<HoldColor[]>([]);
   const [debug, setDebugState] = useState<DebugDrawOptions>(DEFAULT_DEBUG_DRAW);
   const [stats, setStats] = useState<RuntimeStats>({ fps: 0, physicsHz: board.physics.physicsHz, stepMs: 0, activeBalls: 0, launched: 0, start: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 });
 
   controlsRef.current = controls;
   debugRef.current = debug;
+
+  const readLotteryClock: LotteryClockReader = useCallback(() => {
+    const active = activeLotteryRef.current;
+    return active === null ? lastLotteryClockRef.current : lotteryClockSnapshot(active, performance.now());
+  }, []);
+
+  useEffect(() => {
+    const audio = new PlayAudio();
+    audioRef.current = audio;
+    return () => { audio.dispose(); if (audioRef.current === audio) audioRef.current = null; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +122,14 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
     let lastFrame = performance.now();
     let lastStats = lastFrame;
     let frames = 0;
+    activeLotteryRef.current = null;
+    lastLotteryClockRef.current = INACTIVE_LOTTERY_CLOCK;
+    playLotteryRef.current = null;
+    holdQueueRef.current = [];
+    lotteryBusyRef.current = false;
+    setHoldColors([]);
+    setLottery(IDLE_PRESENTATION);
+    audioRef.current?.silence(0);
     const host = hostRef.current;
     if (host === null) return;
     const start = async () => {
@@ -72,53 +140,82 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
       if (cancelled) { renderer.destroy(); engine.dispose(); return; }
       engineRef.current = engine;
       rendererRef.current = renderer;
+      lastAutoTickRef.current = -Infinity;
       countsRef.current = { launched: 0, start: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 };
-      audioRef.current = new PlayAudio();
-      holdQueueRef.current = []; lotteryBusyRef.current = false; setHolds(0);
-      const playLottery = (rawState: number): void => {
+      const playLottery = (rawState: number, now = performance.now()): void => {
         lotteryBusyRef.current = true;
-        const state = rawState >>> 0;
-        const jackpot = state % 319 === 0;
         const drawId = ++drawIdRef.current;
-        const digits: [number, number, number] = jackpot ? [7, 7, 7] : [state % 10, (state >>> 8) % 10, (state >>> 16) % 10];
-        lotteryTimersRef.current.forEach(window.clearTimeout); lotteryTimersRef.current = [];
-        const update = (phase: LotteryPhase, nextDigits = digits) => setLottery({ phase, digits: nextDigits, jackpot, drawId });
-        update("CHANCE", [state % 10, (state >>> 4) % 10, (state >>> 12) % 10]);
-        audioRef.current?.storyAlarm();
-        lotteryTimersRef.current.push(window.setTimeout(() => { update("REACH", [digits[0], (digits[1] + 3) % 10, digits[2]]); audioRef.current?.storyLaunch(); }, 1500));
-        lotteryTimersRef.current.push(window.setTimeout(() => audioRef.current?.storyImpact(), 3000));
-        lotteryTimersRef.current.push(window.setTimeout(() => audioRef.current?.storySync(), 3900));
-        lotteryTimersRef.current.push(window.setTimeout(() => { audioRef.current?.silence(420); update("FREEZE"); }, 4875));
-        lotteryTimersRef.current.push(window.setTimeout(() => { update("RESULT"); audioRef.current?.storyStrike(); }, 5300));
-        if (jackpot) lotteryTimersRef.current.push(window.setTimeout(() => {
-          update("JACKPOT"); audioRef.current?.kyuin();
-          phaseRef.current = "RUSH"; rushShotsRef.current = 100; setPhase("RUSH"); audioRef.current?.rush();
-        }, 5650));
-        const finishAfter = 6200;
-        lotteryTimersRef.current.push(window.setTimeout(() => {
-          setLottery({ phase: "IDLE", digits, jackpot, drawId });
-          const next = holdQueueRef.current.shift(); setHolds(holdQueueRef.current.length);
-          if (next === undefined) lotteryBusyRef.current = false;
-          else playLottery(next);
-        }, finishAfter));
+        const outcome = createLotteryOutcome(rawState);
+        const presentation = lotteryPresentationAt(outcome, 0, drawId);
+        activeLotteryRef.current = {
+          outcome,
+          startedAt: now,
+          pushed: false,
+          drawId,
+          playedCues: new Set(),
+          lastPresentationKey: presentationKey(presentation),
+        };
+        setLottery(presentation);
+        if (lotteryAudioCueAllowed(outcome, "storyAlarm")) audioRef.current?.storyAlarm();
       };
-      engine.events.on("ball.launched", () => {
-        countsRef.current.launched += 1; audioRef.current?.launch();
-        if (phaseRef.current === "RUSH" && --rushShotsRef.current <= 0) {
-          phaseRef.current = "NORMAL"; setPhase("NORMAL"); audioRef.current?.normal();
+      playLotteryRef.current = playLottery;
+      const advanceLottery = (now: number): void => {
+        const active = activeLotteryRef.current;
+        if (active === null) return;
+        const clock = lotteryClockSnapshot(active, now);
+        const elapsed = clock.elapsedMs;
+        const cue = (name: LotteryAudioCueId | "freeze", at: number, action: () => void): void => {
+          if (name !== "freeze" && !lotteryAudioCueAllowed(active.outcome, name)) return;
+          if (elapsed < at || active.playedCues.has(name)) return;
+          active.playedCues.add(name);
+          action();
+        };
+        if (active.outcome.reach) {
+          cue("storyLaunch", LOTTERY_TIMING.reach, () => audioRef.current?.storyLaunch());
+          cue("hotAlert", LOTTERY_TIMING.hot, () => audioRef.current?.hotAlert());
+          cue("storyImpact", LOTTERY_TIMING.impact, () => audioRef.current?.storyImpact());
+          cue("storySync", LOTTERY_TIMING.sync, () => audioRef.current?.storySync());
+          cue("freeze", LOTTERY_TIMING.freeze, () => audioRef.current?.silence(Number.POSITIVE_INFINITY));
+          cue("storyStrike", LOTTERY_TIMING.result, () => audioRef.current?.storyStrike());
+        }
+        cue("kyuin", LOTTERY_TIMING.jackpot, () => audioRef.current?.kyuin());
+        cue("rush", LOTTERY_TIMING.jackpot, () => {
+          phaseRef.current = "RUSH"; rushShotsRef.current = RUSH_SHOTS; setPhase("RUSH"); audioRef.current?.rush();
+        });
+        const presentation = lotteryPresentationAt(active.outcome, elapsed, active.drawId);
+        const key = presentationKey(presentation);
+        if (key !== active.lastPresentationKey) {
+          active.lastPresentationKey = key;
+          setLottery(presentation);
+        }
+        if (elapsed < lotteryFinishAt(active.outcome)) return;
+        const queued = dequeueLotteryHold(holdQueueRef.current);
+        holdQueueRef.current = [...queued.holds];
+        const next = queued.next;
+        setHoldColors(queued.holds.map((state) => createLotteryOutcome(state).holdColor));
+        if (next === undefined) {
+          lastLotteryClockRef.current = { ...clock, active: false };
+          activeLotteryRef.current = null;
+          lotteryBusyRef.current = false;
+        } else playLottery(next, now);
+      };
+      engine.events.on("ball.launched", (event) => {
+        countsRef.current.launched += 1; audioRef.current?.launch(Math.hypot(event.velocity.x, event.velocity.y));
+        const rush = consumeRushShot(phaseRef.current, rushShotsRef.current);
+        rushShotsRef.current = rush.remainingShots;
+        if (rush.phase !== phaseRef.current) {
+          phaseRef.current = rush.phase; setPhase(rush.phase); audioRef.current?.normal();
         }
       });
-      engine.events.on("nail.hit", () => audioRef.current?.nail());
+      engine.events.on("nail.hit", (event) => audioRef.current?.nail(event.speedBefore));
       engine.events.on("sensor.enter", (event) => {
         if (event.role === "START") {
           countsRef.current.start += 1; audioRef.current?.pocket();
-          if (phaseRef.current === "NORMAL") {
-            let state = lotteryStateRef.current; state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
-            lotteryStateRef.current = state >>> 0;
-            if (lotteryBusyRef.current) {
-              if (holdQueueRef.current.length < 4) { holdQueueRef.current.push(lotteryStateRef.current); setHolds(holdQueueRef.current.length); }
-            } else playLottery(lotteryStateRef.current);
-          }
+          const transition = consumeLotteryStart(lotteryStateRef.current, phaseRef.current, lotteryBusyRef.current, holdQueueRef.current);
+          lotteryStateRef.current = transition.randomState;
+          holdQueueRef.current = [...transition.holds];
+          if (transition.disposition === "held") setHoldColors(transition.holds.map((state) => createLotteryOutcome(state).holdColor));
+          if (transition.drawNow !== undefined) playLottery(transition.drawNow);
         }
         if (event.role === "OUT") { countsRef.current.out += 1; audioRef.current?.out(); }
         if (event.role === "THROUGH") countsRef.current.through += 1;
@@ -135,13 +232,14 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
           if (current.autoFire) {
             const interval = Math.round(engine.physicsHz * 60 / current.fireRate);
             if (engine.tick - lastAutoTickRef.current >= interval) {
-              engine.schedule({ type: "launch", tick: engine.tick, sequence: sequenceRef.current++, power: phaseRef.current === "RUSH" ? 1 : 0.68 });
+              scheduleConfiguredLaunch(engine, board, phaseRef.current === "RUSH" ? 1 : current.power, sequenceRef.current++);
               lastAutoTickRef.current = engine.tick;
             }
           }
           engine.step();
         });
         renderer.render(engine.snapshot(), alpha, debugRef.current);
+        advanceLottery(now);
         frames += 1;
         if (now - lastStats >= 500) {
           const diagnostics = engine.diagnostics();
@@ -161,9 +259,8 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
       engineRef.current?.dispose();
       rendererRef.current = null;
       engineRef.current = null;
-      lotteryTimersRef.current.forEach(window.clearTimeout);
-      audioRef.current?.dispose();
-      audioRef.current = null;
+      activeLotteryRef.current = null;
+      playLotteryRef.current = null;
     };
   }, [board]);
 
@@ -171,12 +268,33 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
     const engine = engineRef.current;
     if (engine === null) return;
     audioRef.current?.unlock();
-    engine.schedule({ type: "launch", tick: engine.tick, sequence: sequenceRef.current++, power: phaseRef.current === "RUSH" ? 1 : 0.68 });
+    scheduleConfiguredLaunch(engine, board, phaseRef.current === "RUSH" ? 1 : controlsRef.current.power, sequenceRef.current++);
+  }, [board]);
+
+  const unlockAudio = useCallback(() => audioRef.current?.unlock(), []);
+
+  const pushLottery = useCallback(() => {
+    const active = activeLotteryRef.current;
+    if (active === null || active.pushed || !active.outcome.reach) return;
+    const now = performance.now();
+    const elapsed = lotteryElapsedAwaitingPush(now - active.startedAt);
+    if (elapsed < LOTTERY_TIMING.freeze) return;
+    audioRef.current?.unlock();
+    audioRef.current?.silence(0);
+    active.pushed = true;
+    active.startedAt = now - lotteryElapsedAfterPush(elapsed);
   }, []);
 
   const setDebug = useCallback((key: keyof DebugDrawOptions, value: boolean) => {
     setDebugState((current) => ({ ...current, [key]: value }));
   }, []);
 
-  return { hostRef, fire, debug, setDebug, stats, phase, rushShots: rushShotsRef.current, lottery, holds, snapshot: engineRef.current?.snapshot() ?? EMPTY };
+  const triggerLottery = useCallback((rawState: number) => {
+    const playLottery = playLotteryRef.current;
+    if (playLottery === null) return false;
+    playLottery(rawState);
+    return true;
+  }, []);
+
+  return { hostRef, fire, unlockAudio, pushLottery, triggerLottery, readLotteryClock, debug, setDebug, stats, phase, rushShots: rushShotsRef.current, lottery, holds: holdColors.length, holdColors, snapshot: engineRef.current?.snapshot() ?? EMPTY };
 }

@@ -5,6 +5,7 @@ interface Props {
   readonly controls: SimulationControls;
   readonly onControls: (next: SimulationControls) => void;
   readonly fire: () => void;
+  readonly unlockAudio: () => void;
   readonly debug: DebugDrawOptions;
   readonly onDebug: (key: keyof DebugDrawOptions, value: boolean) => void;
   readonly stats: RuntimeStats;
@@ -18,13 +19,13 @@ const label: Record<keyof DebugDrawOptions, string> = {
   collisionPoints: "Collision Point", ballTrails: "Ball Trail", ballIds: "Ball ID", nailIds: "Nail ID",
 };
 
-export function ControlPanel({ controls, onControls, fire, debug, onDebug, stats, onBatch, batchStatus }: Props) {
+export function ControlPanel({ controls, onControls, fire, unlockAudio, debug, onDebug, stats, onBatch, batchStatus }: Props) {
   const update = <K extends keyof SimulationControls>(key: K, value: SimulationControls[K]) => onControls({ ...controls, [key]: value });
   return <aside className="panel" aria-label="Debug and calibration panel">
     <section><h2>発射ハンドル</h2>
       <label>発射強度 <output>{controls.power.toFixed(2)}</output><input aria-label="Launch Power" type="range" min="0" max="1" step="0.01" value={controls.power} onChange={(event) => update("power", Number(event.target.value))}/></label>
       <label>発射レート<select value={controls.fireRate} onChange={(event) => update("fireRate", Number(event.target.value) as SimulationControls["fireRate"])}>{[25,50,75,100].map((rate) => <option key={rate} value={rate}>{rate} balls/min{rate === 100 ? " (REALISTIC)" : ""}</option>)}</select></label>
-      <div className="button-row"><button onClick={fire}>Fire</button><button className={controls.autoFire ? "active" : ""} onClick={() => update("autoFire", !controls.autoFire)}>{controls.autoFire ? "オート停止" : "オート開始"}</button></div>
+      <div className="button-row"><button onClick={fire}>Fire</button><button className={controls.autoFire ? "active" : ""} onClick={() => { unlockAudio(); update("autoFire", !controls.autoFire); }}>{controls.autoFire ? "オート停止" : "オート開始"}</button></div>
     </section>
     <section><h2>シミュレーション</h2>
       <label>Speed<select value={controls.simulationSpeed} onChange={(event) => update("simulationSpeed", Number(event.target.value) as SimulationControls["simulationSpeed"])}>{[1,2,4,8,16].map((speed) => <option key={speed} value={speed}>{speed}x</option>)}</select></label>

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "path": "/assets/original-pachinko-cabinet-shell-v1.png",
+      "purpose": "Original cabinet shell artwork",
+      "source": "Generated for this project with OpenAI image generation; session 019fe9df-28c6-7380-a803-124150564ad8",
+      "provenanceStatus": "verified",
+      "licenseStatus": "verified",
+      "sha256": "25175631bd2c6b122d475df599128c301190e6b4e7effc88b6770b7497722234"
+    },
+    {
+      "path": "/assets/story/keyframes/story-01.png",
+      "purpose": "Story video poster",
+      "source": "Original HyperFrames composition videos/pachinko-liquid-reach-motion at source SHA-256 135496def49bf4345f5b410b72a2fafd02d545f590436d604824f4bc20f8d875; frame 139 rendered with the dedicated Hermes Chrome profile; render-audit.json",
+      "provenanceStatus": "verified",
+      "licenseStatus": "verified",
+      "sha256": "9848e713a6ed0efe451e429a636b1e13e04a9bcb95723ab5b814474447c9c146"
+    },
+    {
+      "path": "/assets/story/story-smooth.mp4",
+      "purpose": "Story video",
+      "source": "Original HyperFrames composition videos/pachinko-liquid-reach-motion at source SHA-256 135496def49bf4345f5b410b72a2fafd02d545f590436d604824f4bc20f8d875; 255 deterministic frames rendered with the dedicated Hermes Chrome profile; render-audit.json",
+      "provenanceStatus": "verified",
+      "licenseStatus": "verified",
+      "sha256": "d462f57b551b014c0a96295cdd915375f175146fd9e777639d14cb15f0133827"
+    }
+  ]
+}

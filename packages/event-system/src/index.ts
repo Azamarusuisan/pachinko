@@ -5,9 +5,10 @@ export type PhysicsEvent =
   | (BaseEvent & { readonly type: "ball.spawned" })
   | (BaseEvent & { readonly type: "ball.launched"; readonly velocity: Vector2 })
   | (BaseEvent & { readonly type: "ball.collision"; readonly colliderId: string })
-  | (BaseEvent & { readonly type: "nail.hit"; readonly nailId: string })
+  | (BaseEvent & { readonly type: "nail.hit"; readonly nailId: string; readonly speedBefore: number })
   | (BaseEvent & { readonly type: "sensor.enter"; readonly sensorId: string; readonly role: string })
   | (BaseEvent & { readonly type: "sensor.exit"; readonly sensorId: string; readonly role: string })
+  | (BaseEvent & { readonly type: "warp.enter"; readonly sensorId: string; readonly destinationSensorId: string | null })
   | (BaseEvent & { readonly type: "ball.out"; readonly sensorId: string })
   | (BaseEvent & { readonly type: "ball.destroyed"; readonly reason: "terminal" | "timeout" });
 

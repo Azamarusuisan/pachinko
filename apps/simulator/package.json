@@ -1,6 +1,6 @@
 {
   "name":"@pachinko/simulator","version":"0.1.0","private":true,"type":"module",
   "scripts":{"dev":"vite --host 127.0.0.1 --open","build":"vite build","preview":"vite preview --host 127.0.0.1 --open"},
-  "dependencies":{"@pachinko/board-schema":"0.1.0","@pachinko/physics-core":"0.1.0","@pachinko/renderer-pixi":"0.1.0","@pachinko/input-system":"0.1.0","@pachinko/simulation-runner":"0.1.0","@pachinko/board-editor":"0.1.0","@pachinko/calibration":"0.1.0","react":"19.1.1","react-dom":"19.1.1","pixi.js":"8.13.2"},
+  "dependencies":{"@pachinko/board-schema":"0.1.0","@pachinko/physics-core":"0.1.0","@pachinko/renderer-pixi":"0.1.0","@pachinko/input-system":"0.1.0","@pachinko/effect-system":"0.1.0","@pachinko/simulation-runner":"0.1.0","@pachinko/board-editor":"0.1.0","@pachinko/calibration":"0.1.0","react":"19.1.1","react-dom":"19.1.1","pixi.js":"8.13.2"},
   "devDependencies":{"@vitejs/plugin-react":"5.0.2","vite":"7.1.3"}
 }

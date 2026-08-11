@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 3,
+  "generatedAt": "2026-08-11T09:33:34.234Z",
+  "classification": "DETERMINISTIC_REGRESSION_BASELINE_NOT_REAL_MACHINE_CALIBRATION",
+  "regenerateCommand": "npm run baseline:generate",
+  "verifyCommand": "npm run baseline:check",
+  "pachinko": {
+    "path": ".",
+    "origin": "https://github.com/Azamarusuisan/pachinko.git",
+    "sourceSnapshot": {
+      "fileCount": 183,
+      "sha256": "4133f6d8e6e9f13ab553c3632aed52c94aea027e41e76a3e38bf3b353eb73a2f"
+    }
+  },
+  "nojiru": {
+    "path": "external:nojiru",
+    "origin": "https://github.com/SHOGO391/nojiru.git",
+    "branch": "main",
+    "head": "bbefab094522f17c85342f2fe4822f7e881292eb",
+    "worktree": {
+      "clean": true,
+      "dirtyTreeSha256": "5f93c413a545ab435cefb980343bf405b31c17ffe2147cc1a1b6685db4efaa6c",
+      "trackedPatchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "changes": [],
+      "untracked": [],
+      "excludedPaths": []
+    }
+  },
+  "inputs": {
+    "boardPath": "boards/prototype/eva15_inspired_physics_v1.json",
+    "boardRawSha256": "eafdd5082c4752f858895971dbb59bb269e8783972e109586084712fb87891ea",
+    "boardCanonicalSha256": "6c5a5f5276db7efd97cfe2d5e8d36da9cc22d20b9df86527c62ee03df05ecf97",
+    "boardGeometrySha256": "f6478a474ffd20f2b4740648ce43fb57bf47b5c51ba8df6fd78bca62024a0c5a",
+    "physicsConfigSha256": "99a9cdb2361e552a21b72516d1012eec0889d262b8a2768f5de66201c9c068d4",
+    "launcherConfigSha256": "f0e92411de8f7746a2d71c8ae0a9da3891cf8c1f950f94bee0e577ee73683a04",
+    "experimentConfigSha256": "6f3112e35a6ab3c82f2ef6d154de2af3942883dc217284be33dbc48271e28925",
+    "packageLockSha256": "6e3e6703b0386272dd59b189afb5bdd2bb18d9e6769c1f5db7d1af9ef2ab9c65"
+  },
+  "assetBoundary": {
+    "publicRuntime": {
+      "path": "apps/simulator/public/assets",
+      "fileCount": 4,
+      "totalBytes": 2058367,
+      "inventorySha256": "9017703c319c934d51212ce8522a5fba8a993909dfa0ebfb85d615d938ccd787",
+      "files": [
+        {
+          "path": "original-pachinko-cabinet-shell-v1.png",
+          "bytes": 1734415,
+          "sha256": "25175631bd2c6b122d475df599128c301190e6b4e7effc88b6770b7497722234"
+        },
+        {
+          "path": "runtime-assets.json",
+          "bytes": 1470,
+          "sha256": "d7c923de97c6c73a4551404b99e1f3f876d161f8953ae729de247988b7d2df38"
+        },
+        {
+          "path": "story/keyframes/story-01.png",
+          "bytes": 75238,
+          "sha256": "9848e713a6ed0efe451e429a636b1e13e04a9bcb95723ab5b814474447c9c146"
+        },
+        {
+          "path": "story/story-smooth.mp4",
+          "bytes": 247244,
+          "sha256": "d462f57b551b014c0a96295cdd915375f175146fd9e777639d14cb15f0133827"
+        }
+      ]
+    },
+    "researchQuarantine": {
+      "path": "research-data/runtime-quarantine/public-assets",
+      "fileCount": 158,
+      "totalBytes": 180157993,
+      "inventorySha256": "56b5c62f273f39653d049076aca2612d8f85be3ad73518f006197f649e9a98aa"
+    },
+    "localResearchAudio": {
+      "path": "research-data/local-audio",
+      "fileCount": 4,
+      "totalBytes": 75113,
+      "inventorySha256": "06d40c31d824b828d7c84a4d43dac86852cd957063b79bf824ca835b00735401"
+    }
+  },
+  "experiment": {
+    "config": {
+      "boardVersion": "2.5.1-visible-continuous-gauge",
+      "seed": 123456,
+      "balls": 1000,
+      "fireRate": 100,
+      "physicsConfig": {
+        "gravity": 9.80665,
+        "gravityScale": 1,
+        "physicsHz": 240,
+        "substeps": 16,
+        "ccdEnabled": true,
+        "linearDamping": 0.025,
+        "angularDamping": 0.04,
+        "ballRadiusMillimeters": 5.5,
+        "ballMassGrams": 5.45,
+        "ballRestitution": 0.44,
+        "ballFriction": 0.12,
+        "maxVelocity": null
+      },
+      "launcherConfig": {
+        "strength": 0.68,
+        "positionMillimeters": {
+          "x": 468,
+          "y": 455
+        },
+        "angleDegrees": -100,
+        "varianceDegrees": 0.3,
+        "minVelocity": 0,
+        "maxVelocity": 5.2
+      }
+    },
+    "result": {
+      "configHash": "6f3112e35a6ab3c82f2ef6d154de2af3942883dc217284be33dbc48271e28925",
+      "boardHash": "f6478a474ffd20f2b4740648ce43fb57bf47b5c51ba8df6fd78bca62024a0c5a",
+      "timestamp": "2026-08-11T09:33:34.234Z",
+      "metrics": {
+        "boardId": "eva15_inspired_physics_v2",
+        "boardVersion": "2.5.1-visible-continuous-gauge",
+        "physicsVersion": "phase1-rapier-0.19.3-v5",
+        "seed": 123456,
+        "launchPower": 0.68,
+        "fireRate": 100,
+        "physicsHz": 240,
+        "ccdEnabled": true,
+        "substeps": 16,
+        "totalBalls": 1000,
+        "startWins": 437,
+        "outCount": 322,
+        "otherSensorCount": 241,
+        "sensorEnterCounts": {
+          "ROUTE_LEFT": 1000,
+          "ROUTE_CENTER": 759,
+          "START": 437,
+          "OUT": 322,
+          "POCKET": 241
+        },
+        "timeoutCount": 0,
+        "ballsLaunched": 1000,
+        "startEntries": 437,
+        "outEntries": 322,
+        "otherPocketEntries": 241,
+        "timeouts": 0,
+        "startRate": 0.437,
+        "outRate": 0.322,
+        "averageLifetime": 1.1906874999999986,
+        "medianLifetime": 1.2750000000000028,
+        "p95Lifetime": 1.3666666666666742,
+        "averageCollisionCount": 24.069,
+        "medianCollisionCount": 25,
+        "p95CollisionCount": 26,
+        "averageVelocity": 0.9847176650114082,
+        "maxVelocity": 3.5360000000000005,
+        "averageCollisionSpeedBefore": 1.2726370638169038,
+        "averageCollisionSpeedAfter": 1.0773470406882955,
+        "maxCollisionSpeedBefore": 3.3283173563303445,
+        "maxCollisionSpeedAfter": 3.196118773823561,
+        "collisionVelocityMeasurement": "SUBSTEP_BOUNDARY_PROXY",
+        "velocityClampCount": 0,
+        "nailCollisionCount": 2075,
+        "railCollisionCount": 14462,
+        "windmillCollisionCount": 0,
+        "leftRouteRate": 1,
+        "centerRouteRate": 0,
+        "rightRouteRate": 0,
+        "firstLeftRouteRate": 1,
+        "firstCenterRouteRate": 0,
+        "firstRightRouteRate": 0,
+        "routeEnterCounts": {
+          "left": 1000,
+          "center": 759,
+          "right": 0
+        },
+        "routeExposureRates": {
+          "left": 1,
+          "center": 0.759,
+          "right": 0
+        },
+        "simulatedSeconds": 600.325,
+        "finite": true,
+        "remainingBodies": 0,
+        "heatmap": null
+      }
+    }
+  }
+}
