@@ -33,10 +33,14 @@ export interface SimulationMetrics {
   readonly timeoutCount: number;
   readonly ballsLaunched: number;
   readonly startEntries: number;
+  /** Physical START-mouth entries. Accepted spins and full-hold overflow are runtime presentation metrics. */
+  readonly startPocketEntries: number;
   readonly outEntries: number;
   readonly otherPocketEntries: number;
   readonly timeouts: number;
   readonly startRate: number;
+  /** Physical START-mouth entries divided by launched balls; never borrowed-ball or prize-replay basis. */
+  readonly physicalStartRatePerLaunchedBall: number;
   readonly outRate: number;
   readonly averageLifetime: number;
   readonly medianLifetime: number;
@@ -175,10 +179,12 @@ export async function runBatch(options: BatchOptions): Promise<SimulationMetrics
     timeoutCount: timeouts,
     ballsLaunched: options.balls,
     startEntries: starts,
+    startPocketEntries: starts,
     outEntries: outs,
     otherPocketEntries: pockets,
     timeouts,
-    startRate: ratio(starts, completed.length),
+    startRate: ratio(starts, options.balls),
+    physicalStartRatePerLaunchedBall: ratio(starts, options.balls),
     outRate: ratio(outs, completed.length),
     averageLifetime: average(completed.map((ball) => ball.lifetime)),
     medianLifetime: percentile(completed.map((ball) => ball.lifetime), 0.5),

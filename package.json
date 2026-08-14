@@ -35,6 +35,7 @@
     "simulate:trace": "node --import tsx tools/simulation-runner/src/trace.ts",
     "simulate:timeouts": "node --import tsx tools/simulation-runner/src/timeout-report.ts",
     "simulate:convergence": "node --import tsx tools/simulation-runner/src/convergence-cli.ts",
+    "release:readiness": "node --import tsx tools/simulation-runner/src/release-readiness.ts",
     "experiment": "node --import tsx tools/simulation-runner/src/experiment-cli.ts",
     "calibration:observed": "node --import tsx tools/calibration/src/observed-cli.ts",
     "playground:windmill": "node --import tsx tools/physics-playground/src/cli.ts",

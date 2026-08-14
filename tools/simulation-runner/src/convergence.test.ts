@@ -21,7 +21,7 @@ const stable: ConvergenceSnapshot = {
 };
 
 describe("effective solver-step convergence", () => {
-  it("reproduces the first display divergence without nails, arcs, sensors, or another ball", async () => {
+  it("keeps the first display contact stable after the upper-release correction", async () => {
     const fullBoard = await loadBoard();
     const display = fullBoard.mechanisms.find((mechanism) => mechanism.id === "center-display-collider");
     if (display === undefined) throw new Error("Missing center display collider");
@@ -46,8 +46,8 @@ describe("effective solver-step convergence", () => {
       engine.dispose();
       return displayContactTicks;
     };
-    expect(await trace(16)).toEqual([48, 65, 71, 73, 89, 92, 93]);
-    expect(await trace(32)).toEqual([48, 65, 70, 72, 89, 92]);
+    expect(await trace(16)).toEqual([89]);
+    expect(await trace(32)).toEqual([89]);
   });
 
   it("keeps outcomes and contacts identical when only Hz/substep factorisation changes", async () => {

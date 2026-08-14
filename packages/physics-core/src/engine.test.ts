@@ -62,6 +62,36 @@ describe("Rapier pachinko physics", () => {
     engine.dispose();
   });
 
+  it("bounces off the published shaft-scale nail at production speed", async () => {
+    const board = makeTestBoard({
+      physics: { ...makeTestBoard().physics, gravity: 0.001, physicsHz: 240, substeps: 16 },
+      ball: { diameter: 11, massGrams: 5.45, friction: 0.12, restitution: 0.44 },
+      launcher: { position: { x: 244.5, y: 50 }, angleDegrees: 90, minVelocity: 3.536, maxVelocity: 3.536, angleJitterDegrees: 0 },
+      nails: [{ ...nail, positionX: 250, positionY: 100, radius: 0.92, friction: 0.18, restitution: 0.52 }],
+    });
+    const engine = await PachinkoPhysicsEngine.create({ board, seed: 27 });
+    let hit = false;
+    let beforeStep: { x: number; y: number } | undefined;
+    let incoming: { x: number; y: number } | undefined;
+    engine.events.on("nail.hit", () => {
+      hit = true;
+      incoming ??= beforeStep;
+    });
+    engine.launch(1);
+    for (let index = 0; index < 80 && !hit; index += 1) {
+      beforeStep = engine.snapshot().balls[0]?.velocity;
+      engine.step();
+    }
+    const outgoing = engine.snapshot().balls[0]?.velocity;
+    expect(hit).toBe(true);
+    expect(incoming).toBeDefined();
+    expect(outgoing).toBeDefined();
+    const dot = ((incoming?.x ?? 0) * (outgoing?.x ?? 0) + (incoming?.y ?? 0) * (outgoing?.y ?? 0))
+      / (Math.hypot(incoming?.x ?? 0, incoming?.y ?? 0) * Math.hypot(outgoing?.x ?? 0, outgoing?.y ?? 0));
+    expect(Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI).toBeGreaterThan(30);
+    engine.dispose();
+  });
+
   it("converges on the outgoing velocity of a millimetre-scale nail collision", async () => {
     const outgoing = async (substeps: number) => {
       const board = makeTestBoard({
@@ -214,12 +244,12 @@ describe("Rapier pachinko physics", () => {
       const board = makeTestBoard({
         physics: { ...makeTestBoard().physics, substeps, linearDamping: 0.025, angularDamping: 0.04 },
         ball: { diameter: 11, massGrams: 5.45, friction: 0.12, restitution: 0.44 },
-        launcher: { position: { x: 468, y: 455 }, angleDegrees: -100, minVelocity: 3.536, maxVelocity: 3.536, angleJitterDegrees: 0 },
+        launcher: { position: { x: 32, y: 455 }, angleDegrees: -80, minVelocity: 3.536, maxVelocity: 3.536, angleJitterDegrees: 0 },
         rails: [
-          { id: "launch-outer", from: { x: 486, y: 476 }, to: { x: 486, y: 130 }, thickness: 4, friction: 0.06, restitution: 0.3 },
-          { id: "launch-release", from: { x: 486, y: 125 }, to: { x: 420, y: 70 }, thickness: 4, friction: 0.06, restitution: 0.38 },
+          { id: "launch-outer", from: { x: 14, y: 476 }, to: { x: 14, y: 130 }, thickness: 4, friction: 0.06, restitution: 0.3 },
+          { id: "launch-release", from: { x: 14, y: 125 }, to: { x: 55, y: 57 }, thickness: 4, friction: 0.06, restitution: 0.38 },
         ],
-        gates: [{ id: "launch-inner-one-way", from: { x: 447, y: 470 }, to: { x: 447, y: 155 }, thickness: 4, friction: 0.06, restitution: 0.3, enabled: true, collisionMode: "BIDIRECTIONAL" }],
+        gates: [{ id: "launch-inner-one-way", from: { x: 53, y: 470 }, to: { x: 53, y: 155 }, thickness: 4, friction: 0.06, restitution: 0.3, enabled: true, collisionMode: "BIDIRECTIONAL" }],
       });
       const engine = await PachinkoPhysicsEngine.create({ board, seed: 23, substeps });
       const contacts: string[] = [];
@@ -436,6 +466,40 @@ describe("Rapier pachinko physics", () => {
     expect(destroyed).toBe(1);
     expect(engine.completedBalls[0]?.terminal).toBe("start");
     expect(engine.diagnostics().dynamicBodyCount).toBe(0);
+    engine.dispose();
+  });
+
+  it("requires the ball centre to fit through the START mouth", async () => {
+    const start = { id: "start", role: "START", center: { x: 250, y: 100 }, width: 13, height: 1 } as const;
+    const run = async (launchX: number) => {
+      const board = makeTestBoard({
+        launcher: { position: { x: launchX, y: 50 }, angleDegrees: 90, minVelocity: 1, maxVelocity: 1, angleJitterDegrees: 0 },
+        sensors: [start],
+        physics: { ...makeTestBoard().physics, maxBallLifetimeSeconds: 0.3 },
+      });
+      const engine = await PachinkoPhysicsEngine.create({ board, seed: 25 });
+      engine.launch(1);
+      while (engine.completedBalls.length === 0) engine.step();
+      const terminal = engine.completedBalls[0]?.terminal;
+      engine.dispose();
+      return terminal;
+    };
+    expect(await run(250)).toBe("start");
+    expect(await run(244)).not.toBe("start");
+  });
+
+  it("captures START before a later OUT crossed in the same substep", async () => {
+    const board = makeTestBoard({
+      launcher: { position: { x: 250, y: 50 }, angleDegrees: 90, minVelocity: 20, maxVelocity: 20, angleJitterDegrees: 0 },
+      sensors: [
+        { id: "start", role: "START", center: { x: 250, y: 70 }, width: 40, height: 1 },
+        { id: "out", role: "OUT", center: { x: 250, y: 80 }, width: 40, height: 1 },
+      ],
+    });
+    const engine = await PachinkoPhysicsEngine.create({ board, seed: 26, substeps: 1 });
+    engine.launch(1);
+    while (engine.completedBalls.length === 0) engine.step();
+    expect(engine.completedBalls[0]?.terminal).toBe("start");
     engine.dispose();
   });
 

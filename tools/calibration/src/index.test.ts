@@ -15,7 +15,7 @@ import {
 } from "./index.js";
 
 const observedFixture = {
-  schemaVersion: "1",
+  schemaVersion: "2",
   datasetId: "synthetic_test_fixture",
   split: "TRAIN",
   capturedAt: "2026-08-10T12:00:00+09:00",
@@ -25,6 +25,7 @@ const observedFixture = {
   machineId: "test-machine",
   boardId: "test-board",
   ballCount: 30,
+  ballCountBasis: "LAUNCHED_BALLS",
   launchPower: 0.68,
   fireRatePerMinute: 100,
   boardTiltDegrees: 0,
@@ -126,6 +127,7 @@ describe("calibration model", () => {
     expect(() => parseObservedDataset({ ...observedFixture, rightsStatus: "UNKNOWN" })).toThrow();
     expect(() => parseObservedDataset({ ...observedFixture, sourceFileSha256: "not-a-sha256" })).toThrow();
     expect(() => parseObservedDataset({ ...observedFixture, split: "BOTH" })).toThrow();
+    expect(() => parseObservedDataset({ ...observedFixture, ballCountBasis: "LOANED_BALLS" })).toThrow();
     expect(parseObservedDataset(observedFixture).datasetId).toBe("synthetic_test_fixture");
   });
 
@@ -203,7 +205,7 @@ describe("calibration model", () => {
   it("validates frame-level real-machine observations and summarizes them", () => {
     expect(parseObservedCapture(captureFixture).balls).toHaveLength(2);
     const summary = summarizeObservedCapture(captureFixture);
-    expect(summary).toMatchObject({ datasetId: "machine_capture_train", split: "TRAIN", ballCount: 2, trajectorySampleRateHz: 240 });
+    expect(summary).toMatchObject({ datasetId: "machine_capture_train", split: "TRAIN", ballCount: 2, ballCountBasis: "LAUNCHED_BALLS", trajectorySampleRateHz: 240 });
     expect(summary.measurements).toMatchObject({
       startRate: 0.5,
       outRate: 0.5,

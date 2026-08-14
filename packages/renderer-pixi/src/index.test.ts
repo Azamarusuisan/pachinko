@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBoardTemplate } from "@pachinko/board-schema";
-import { createBoardVisualGeometry, pixiArcRunsAnticlockwise } from "./index.js";
+import { createBoardVisualGeometry, hanemonoVisualPolygon, pixiArcRunsAnticlockwise } from "./index.js";
 
 const material = { friction: 0.1, restitution: 0.2 } as const;
 
@@ -8,6 +8,11 @@ describe("Pixi physics overlay", () => {
   it("draws a decreasing board arc in the same direction as its physics segments", () => {
     expect(pixiArcRunsAnticlockwise(-63, -225)).toBe(true);
     expect(pixiArcRunsAnticlockwise(15, 45)).toBe(false);
+  });
+
+  it("expands a physical wing into a visible four-corner mechanism", () => {
+    expect(hanemonoVisualPolygon({ x: 64, y: 344.5 }, { x: 76, y: 344.5 }, 8))
+      .toEqual([64, 352.5, 76, 348.9, 76, 340.1, 64, 336.5]);
   });
 
   it("shows exactly the enabled physical nails without synthesizing LCD nails", () => {

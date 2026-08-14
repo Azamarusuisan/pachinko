@@ -30,3 +30,28 @@ The 100-ball figures are calibration probes, not claimed real-machine probabilit
 - Selected a provisional 1/960 s Rapier step because the primary n019 collision was locally
   close to the 1/1920 s result. Full-board route and terminal distributions are not yet converged,
   so this is a regression baseline rather than a real-machine calibration.
+
+## 2026-08-12 — v2.9 provisional nail pass
+
+Fixed comparison: seeds `1`, `7`, `21`, `123456`, and `987654321`; 1,000 balls
+per seed; power `0.68`; 100 balls/min; 240 Hz; 16 substeps; CCD enabled.
+
+- A path audit found that every one of 26 START balls in a 2,500-ball trace last
+  touched `n117`, while `n110` rejected all 637 balls that touched it. The
+  dominant lower path was `n109 -> n117`; this is measured simulation behavior,
+  not an assumed nail role.
+- One-variable tests moved only `n117` right by 0.5 mm and increased START from
+  1.36% to 9.30% across the five fixed seeds. Moving the life nails alone by
+  0.6 mm per side produced 2.72% in the 625-ball screen.
+- The retained combination moves `n117` from x=235.0 to 235.5 mm, `n110` from
+  x=243.15 to 242.55 mm, and `n111` from x=256.85 to 257.45 mm. The START mouth
+  follows the physical shaft opening from 11.86 to 13.06 mm.
+- The retained candidate produced 692/5,000 START (13.84%), 3,935 OUT (78.70%),
+  373 other pockets (7.46%), zero timeout, zero remaining bodies, 1.6620 s mean
+  lifetime, 35.9362 mean collisions, and 3.536 m/s maximum velocity. The global
+  minimum enabled nail-to-nail surface clearance remained 11.761 mm, above the
+  11 mm ball diameter.
+- This version is deliberately named provisional. The 13.6% reference is a
+  user-supplied launch-ball aggregate, not a measured Eva 15 geometry or a
+  holdout trajectory dataset. Sub-millimetre ablations were non-monotonic, so
+  no further rate-only tuning is justified without observed machine data.

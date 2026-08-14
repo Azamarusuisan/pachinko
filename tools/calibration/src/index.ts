@@ -74,7 +74,7 @@ export interface CalibrationLoss {
   readonly components: Readonly<Partial<Record<CalibrationMetricName, { readonly observed: number; readonly simulated: number; readonly weight: number; readonly squaredError: number }>>>;
 }
 
-export const OBSERVED_DATASET_SCHEMA_VERSION = "1" as const;
+export const OBSERVED_DATASET_SCHEMA_VERSION = "2" as const;
 
 const metricNameSchema = z.enum(CALIBRATION_METRIC_NAMES);
 const rateMetricNames = new Set<CalibrationMetricName>([
@@ -106,6 +106,7 @@ export const observedDatasetSchema = z.strictObject({
   machineId: z.string().min(1),
   boardId: z.string().min(1),
   ballCount: z.number().int().positive(),
+  ballCountBasis: z.literal("LAUNCHED_BALLS"),
   launchPower: z.number().finite().min(0).max(1),
   fireRatePerMinute: z.number().finite().positive().max(100),
   boardTiltDegrees: z.number().finite(),
@@ -469,6 +470,7 @@ export function summarizeObservedCapture(input: unknown): ObservedDataset {
     machineId: capture.machineId,
     boardId: capture.boardId,
     ballCount: capture.balls.length,
+    ballCountBasis: "LAUNCHED_BALLS",
     launchPower: capture.launchPower,
     fireRatePerMinute: capture.fireRatePerMinute,
     boardTiltDegrees: capture.boardTiltDegrees,

@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react";
-import { storyPlaybackPlanAt, type LotteryClockReader, type LotteryPhase } from "./lotteryTimeline.js";
+import { STORY_VIDEO_TIMING, storyPlaybackPlanAt, type LotteryClockReader, type StoryPlaybackPlan } from "./lotteryTimeline.js";
 
-const PLAYING_SEEK_TOLERANCE_SECONDS = 0.02;
-
-export function StorySequence({ active, drawId, phase, jackpot, readClock }: { readonly active: boolean; readonly drawId: number; readonly phase: LotteryPhase; readonly jackpot: boolean; readonly readClock: LotteryClockReader }) {
+export function StorySequence({ active, drawId, jackpot, readClock }: { readonly active: boolean; readonly drawId: number; readonly jackpot: boolean; readonly readClock: LotteryClockReader }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -11,7 +9,29 @@ export function StorySequence({ active, drawId, phase, jackpot, readClock }: { r
     if (video === null) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let animationFrame = 0;
+    let videoFrameCallback = 0;
     let playPending = false;
+    let advancingToFrame: number | null = null;
+    let lastReason: StoryPlaybackPlan["reason"] | null = null;
+    const play = () => {
+      if (!video.paused || video.ended || playPending) return;
+      playPending = true;
+      void video.play().catch(() => undefined).finally(() => { playPending = false; });
+    };
+    const advanceToStaticFrame = (targetFrame: number) => {
+      if (advancingToFrame === targetFrame) return;
+      advancingToFrame = targetFrame;
+      const onVideoFrame: VideoFrameRequestCallback = (_now, metadata) => {
+        videoFrameCallback = 0;
+        const presentedFrame = Math.floor(metadata.mediaTime * STORY_VIDEO_TIMING.fps + 1e-6);
+        if (presentedFrame >= targetFrame) {
+          video.pause();
+          advancingToFrame = null;
+        } else videoFrameCallback = video.requestVideoFrameCallback(onVideoFrame);
+      };
+      videoFrameCallback = video.requestVideoFrameCallback(onVideoFrame);
+      play();
+    };
     const sync = () => {
       if (animationFrame !== 0) cancelAnimationFrame(animationFrame);
       animationFrame = 0;
@@ -22,20 +42,19 @@ export function StorySequence({ active, drawId, phase, jackpot, readClock }: { r
       const plan = storyPlaybackPlanAt(clock, jackpot, motion.matches, document.visibilityState === "visible");
       const duration = Number.isFinite(video.duration) ? video.duration : plan.mediaTimeSeconds;
       const target = Math.min(plan.mediaTimeSeconds, duration);
-      const tolerance = plan.play ? PLAYING_SEEK_TOLERANCE_SECONDS : 0.001;
-      if (Math.abs(video.currentTime - target) > tolerance) {
+      const currentFrame = Math.min(STORY_VIDEO_TIMING.totalFrames - 1, Math.floor(Math.max(0, video.currentTime) * STORY_VIDEO_TIMING.fps + 1e-6));
+      const allowedFrameDrift = plan.play && lastReason === "playing" ? 1 : 0;
+      const sequentialPushFrame = lastReason === "freeze" && plan.mediaFrame === currentFrame + 1;
+      if (!sequentialPushFrame && advancingToFrame === null && Math.abs(currentFrame - plan.mediaFrame) > allowedFrameDrift && !video.seeking) {
         try { video.currentTime = target; } catch { /* metadata is not ready yet */ }
       }
       video.playbackRate = plan.playbackRate;
       if (!plan.play) {
-        video.pause();
-        return;
-      }
-      if (video.paused && !video.ended && !playPending) {
-        playPending = true;
-        void video.play().catch(() => undefined).finally(() => { playPending = false; });
-      }
-      animationFrame = requestAnimationFrame(sync);
+        if (sequentialPushFrame && plan.reason === "miss") advanceToStaticFrame(plan.mediaFrame);
+        else if (advancingToFrame === null) video.pause();
+      } else play();
+      lastReason = plan.reason;
+      if (active) animationFrame = requestAnimationFrame(sync);
     };
     sync();
     const onVisibilityChange = () => sync();
@@ -44,11 +63,12 @@ export function StorySequence({ active, drawId, phase, jackpot, readClock }: { r
     motion.addEventListener("change", sync);
     return () => {
       cancelAnimationFrame(animationFrame);
+      if (videoFrameCallback !== 0) video.cancelVideoFrameCallback(videoFrameCallback);
       video.removeEventListener("loadedmetadata", sync);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       motion.removeEventListener("change", sync);
     };
-  }, [active, drawId, jackpot, phase, readClock]);
+  }, [active, drawId, jackpot, readClock]);
 
   return <video
     ref={videoRef}

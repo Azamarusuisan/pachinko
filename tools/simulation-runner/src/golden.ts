@@ -63,6 +63,6 @@ export function createGoldenBaseline(metrics: SimulationMetrics, measuredAt: str
       centerRouteRate: metrics.centerRouteRate,
       rightRouteRate: metrics.rightRouteRate,
     },
-    tolerances: { startRate: 0.005, averageCollisionCount: 0.25, averageLifetime: 0.05, routeRate: 0.01 },
+    tolerances: { startRate: 0, averageCollisionCount: 0, averageLifetime: 0, routeRate: 0 },
   };
 }

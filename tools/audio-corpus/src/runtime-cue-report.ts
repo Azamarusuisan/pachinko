@@ -187,6 +187,11 @@ async function main(): Promise<void> {
           void frames;
           cues.push({ cue, sha256: firstHash, ...analysis });
         }
+        const kyuin = cues.find((cue) => cue.cue === "kyuin");
+        if (kyuin === undefined || kyuin.durationSeconds < .18 || kyuin.durationSeconds > .28 || kyuin.attackTimeMs > 20
+          || kyuin.highFrequencyRatio < .075 || (kyuin.semitoneSpan ?? 0) < 12 || kyuin.clippedSampleRatio !== 0) {
+          throw new Error(`kyuin acoustic profile failed: ${JSON.stringify(kyuin)}`);
+        }
         const stressEvents = 1_000;
         const firstStress = await renderCue(page, "nail", stressEvents);
         const secondStress = await renderCue(page, "nail", stressEvents);

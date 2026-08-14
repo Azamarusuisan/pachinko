@@ -1,7 +1,7 @@
 import type { BoardDefinition } from "@pachinko/board-schema";
 import type { PhysicsEvent, Vector2 } from "@pachinko/event-system";
 
-export const PHYSICS_VERSION = "phase1-rapier-0.19.3-v5";
+export const PHYSICS_VERSION = "phase1-rapier-0.19.3-v6";
 
 export type BallState = "SPAWNED" | "LAUNCHING" | "PLAYING" | "ENTERED_POCKET" | "OUT" | "DESTROYED";
 export type Route = "left" | "center" | "right";

@@ -26,7 +26,7 @@ describe("effect manifests", () => {
     const cwd = fileURLToPath(new URL("../../../", import.meta.url));
     const dev = spawnSync(process.execPath, ["--import", "tsx", "tools/verify-assets.mjs"], { cwd, encoding: "utf8" });
     expect(dev.status, dev.stderr).toBe(0);
-    expect(dev.stdout).toMatch(/3 files, 3 static references, 3 distributable assets/);
+    expect(dev.stdout).toMatch(/4 files, 3 static references, 4 distributable assets/);
 
     const release = spawnSync(process.execPath, ["--import", "tsx", "tools/verify-assets.mjs", "--release"], { cwd, encoding: "utf8" });
     expect(release.status, release.stderr).toBe(0);

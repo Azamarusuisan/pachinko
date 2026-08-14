@@ -6,7 +6,7 @@ import { runBatch } from "./index.js";
 import { loadBoard } from "./load-board.js";
 import { PHYSICS_VERSION } from "@pachinko/physics-core";
 
-const baselineUrl = new URL("../golden/eva15_v2_seed123456_1000.json", import.meta.url);
+const baselineUrl = new URL("../golden/eva15_v2_9_seed123456_1000.json", import.meta.url);
 
 describe("deterministic Golden simulation baseline", () => {
   it("stays within the committed simulation baseline", async () => {

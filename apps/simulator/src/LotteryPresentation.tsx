@@ -19,7 +19,7 @@ export function LotteryPresentation({ presentation, rush, onPush, readClock }: {
     : LOTTERY_COPY[presentation.phase];
   return <>
     <div className={`effect-scene ${presentation.phase.toLowerCase()} ${presentation.hotCue ? "hot" : ""} ${presentation.reach ? "reach-route" : "normal-route"} ${presentation.jackpot ? "jackpot-outcome" : ""} ${rush && !active ? "rush" : ""}`}>
-      <StorySequence active={active && presentation.reach} drawId={presentation.drawId} phase={presentation.phase} jackpot={presentation.jackpot} readClock={readClock}/>
+      <StorySequence active={active && presentation.reach} drawId={presentation.drawId} jackpot={presentation.jackpot} readClock={readClock}/>
     </div>
     <div className={`lottery-display ${active ? "active" : ""}`} aria-hidden="true">
       {presentation.digits.map((digit, index) => <i key={index} className={presentation.spinning[index] ? "spinning" : "stopped"}>

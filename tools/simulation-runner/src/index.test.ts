@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBoardTemplate } from "@pachinko/board-schema";
+import { PachinkoPhysicsEngine } from "@pachinko/physics-core";
 import { loadBoard } from "./load-board.js";
 import { runBatch } from "./index.js";
 
@@ -55,6 +56,9 @@ describe("headless batch runner", () => {
     expect(metrics.remainingBodies).toBe(0);
     expect(metrics.totalBalls).toBe(1000);
     expect(metrics.startWins).toBe(metrics.startEntries);
+    expect(metrics.startPocketEntries).toBe(metrics.startEntries);
+    expect(metrics.physicalStartRatePerLaunchedBall).toBe(metrics.startPocketEntries / metrics.ballsLaunched);
+    expect(metrics.startRate).toBe(metrics.physicalStartRatePerLaunchedBall);
     expect(metrics.outRate).toBe(metrics.outEntries / metrics.totalBalls);
     expect(metrics.p95Lifetime).toBeGreaterThanOrEqual(metrics.medianLifetime);
     expect(metrics.p95CollisionCount).toBeGreaterThanOrEqual(metrics.medianCollisionCount);
@@ -105,12 +109,80 @@ describe("headless batch runner", () => {
     expect(nailRailGap("n059", "right-lower")).toBeGreaterThanOrEqual(11.5);
     expect(nailRailGap("n004", "strong-shot-return")).toBeGreaterThanOrEqual(11.5);
     expect(Math.hypot(n109.positionX - n110.positionX, n109.positionY - n110.positionY) - n109.radius - n110.radius).toBeGreaterThanOrEqual(11.5);
+    const outer = board.arcRails.find((candidate) => candidate.id === "outer-playfield");
+    const n074 = nail("n074");
+    expect(outer).toBeDefined();
+    if (outer !== undefined) {
+      expect(outer.radius - Math.hypot(n074.positionX - outer.center.x, n074.positionY - outer.center.y) - outer.thickness / 2 - n074.radius)
+        .toBeGreaterThanOrEqual(board.ball.diameter);
+    }
   });
 
   it("drains without relying on later balls to dislodge a trapped ball", async () => {
     const metrics = await runBatch({ board: await loadBoard(), balls: 200, seed: 123456, launchPower: 0.68, fireRate: 25 });
     expect(metrics.timeouts).toBe(0);
     expect(metrics.remainingBodies).toBe(0);
+  });
+
+  it("is invariant when the same effective timestep is split across outer ticks", async () => {
+    const board = await loadBoard();
+    const common = { board, balls: 100, seed: 123456, launchPower: 0.68, fireRate: 100 as const };
+    const baseline = await runBatch({ ...common, physicsHz: 240, substeps: 16 });
+    const refactored = await runBatch({ ...common, physicsHz: 480, substeps: 8 });
+    expect(refactored).toMatchObject({
+      startEntries: baseline.startEntries,
+      outEntries: baseline.outEntries,
+      otherPocketEntries: baseline.otherPocketEntries,
+      timeouts: baseline.timeouts,
+      averageCollisionCount: baseline.averageCollisionCount,
+      averageVelocity: baseline.averageVelocity,
+      maxVelocity: baseline.maxVelocity,
+      remainingBodies: baseline.remainingBodies,
+    });
+  });
+
+  it("launches from the lower-left rail and releases into the top playfield", async () => {
+    const board = await loadBoard();
+    expect(board.launcher.position.x).toBeLessThan(board.board.width * 0.15);
+    expect(board.launcher.position.y).toBeGreaterThan(board.board.height * 0.85);
+    const engine = await PachinkoPhysicsEngine.create({ board, seed: 123456 });
+    const contacts: string[] = [];
+    let velocityBeforeStep = { x: 0, y: 0 };
+    let firstNailTurnDegrees = 0;
+    engine.events.on("ball.collision", (event) => contacts.push(event.colliderId));
+    engine.events.on("nail.hit", () => {
+      if (firstNailTurnDegrees > 0) return;
+      const after = engine.snapshot().balls[0]?.velocity;
+      if (after === undefined) return;
+      const cosine = (velocityBeforeStep.x * after.x + velocityBeforeStep.y * after.y)
+        / (Math.hypot(velocityBeforeStep.x, velocityBeforeStep.y) * Math.hypot(after.x, after.y));
+      firstNailTurnDegrees = Math.acos(Math.max(-1, Math.min(1, cosine))) * 180 / Math.PI;
+    });
+    engine.launch(board.launcher.strength);
+    let reachedTopField = false;
+    for (let index = 0; index < engine.physicsHz; index += 1) {
+      velocityBeforeStep = engine.snapshot().balls[0]?.velocity ?? velocityBeforeStep;
+      engine.step();
+      const position = engine.snapshot().balls[0]?.position;
+      reachedTopField ||= position !== undefined && position.x * 1000 > 55 && position.y * 1000 < 115;
+    }
+    expect(contacts.slice(0, 2)).toEqual(["launch-inner-one-way", "launch-release"]);
+    expect(reachedTopField).toBe(true);
+    expect(contacts.some((id) => id === "outer-playfield" || /^n00[1-9]$|^n010$/.test(id))).toBe(true);
+    expect(firstNailTurnDegrees).toBeGreaterThan(30);
+    engine.dispose();
+  });
+
+  it("includes three synchronized oscillating hanemono wings", async () => {
+    const board = await loadBoard();
+    const wings = board.mechanisms.filter((mechanism) => mechanism.id.startsWith("hanemono-wing"));
+    expect(wings).toHaveLength(3);
+    for (const wing of wings) {
+      expect(wing).toMatchObject({ adapter: "oscillating-wing-v1", motion: "OSCILLATE" });
+      expect(wing.colliders).toHaveLength(1);
+      expect(wing.colliders[0]?.bodyType).toBe("KINEMATIC");
+    }
+    expect(wings.filter((wing) => wing.enabled)).toHaveLength(3);
   });
 
   it("keeps the closed LCD aperture free of enabled nails", async () => {
@@ -167,7 +239,9 @@ describe("headless batch runner", () => {
     if (start !== undefined && left !== undefined && right !== undefined) {
       expect(left.positionX).toBeLessThan(start.center.x);
       expect(right.positionX).toBeGreaterThan(start.center.x);
-      expect(right.positionX - left.positionX - left.radius - right.radius).toBeGreaterThanOrEqual(board.ball.diameter);
+      const shaftGap = right.positionX - left.positionX - left.radius - right.radius;
+      expect(shaftGap).toBeGreaterThanOrEqual(board.ball.diameter);
+      expect(start.width).toBeCloseTo(shaftGap, 10);
     }
   });
 });

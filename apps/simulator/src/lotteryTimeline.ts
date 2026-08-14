@@ -42,6 +42,7 @@ export interface LotteryClockSnapshot {
 export type LotteryClockReader = () => LotteryClockSnapshot;
 
 export interface StoryPlaybackPlan {
+  readonly mediaFrame: number;
   readonly mediaTimeSeconds: number;
   readonly playbackRate: number;
   readonly play: boolean;
@@ -104,6 +105,7 @@ export const LOTTERY_TIMING = {
 
 export const STORY_VIDEO_TIMING = {
   fps: 30,
+  totalFrames: 255,
   durationSeconds: 8.5,
   pauseFrame: 139,
   resumeFrame: 140,
@@ -124,9 +126,9 @@ export function nextLotteryRandomState(rawState: number): number {
 
 export function consumeLotteryStart(rawState: number, phase: PlayPhase, busy: boolean, holds: readonly number[]): LotteryStartTransition {
   if (phase === "RUSH") return { randomState: rawState >>> 0, holds, disposition: "ignored-rush" };
+  if (busy && holds.length >= MAX_LOTTERY_HOLDS) return { randomState: rawState >>> 0, holds, disposition: "dropped-full" };
   const randomState = nextLotteryRandomState(rawState);
   if (!busy) return { randomState, holds, drawNow: randomState, disposition: "started" };
-  if (holds.length >= MAX_LOTTERY_HOLDS) return { randomState, holds, disposition: "dropped-full" };
   return { randomState, holds: [...holds, randomState], disposition: "held" };
 }
 
@@ -189,21 +191,24 @@ export function lotteryElapsedAwaitingPush(elapsedMs: number): number {
 }
 
 export function storyPlaybackPlanAt(clock: LotteryClockSnapshot, jackpot: boolean, reducedMotion: boolean, visible: boolean): StoryPlaybackPlan {
-  if (!clock.active) return { mediaTimeSeconds: 0, playbackRate: 1, play: false, reason: "idle" };
+  if (!clock.active) return { mediaFrame: 0, mediaTimeSeconds: 0, playbackRate: 1, play: false, reason: "idle" };
   const elapsedMs = Math.max(0, Number.isFinite(clock.elapsedMs) ? clock.elapsedMs : 0);
   const beforePushRate = STORY_VIDEO_TIMING.pauseSeconds / (LOTTERY_TIMING.freeze / 1_000);
-  const mediaTimeSeconds = clock.pushed
+  const rawMediaFrame = clock.pushed
     ? jackpot
-      ? Math.min(STORY_VIDEO_TIMING.durationSeconds, STORY_VIDEO_TIMING.resumeSeconds + Math.max(0, elapsedMs - LOTTERY_TIMING.result) / 1_000)
-      : STORY_VIDEO_TIMING.resumeSeconds
-    : Math.min(STORY_VIDEO_TIMING.pauseSeconds, elapsedMs / 1_000 * beforePushRate);
+      ? STORY_VIDEO_TIMING.resumeFrame + Math.floor(Math.max(0, elapsedMs - LOTTERY_TIMING.result) / 1_000 * STORY_VIDEO_TIMING.fps)
+      : STORY_VIDEO_TIMING.resumeFrame
+    : Math.min(STORY_VIDEO_TIMING.pauseFrame, Math.floor(elapsedMs / LOTTERY_TIMING.freeze * STORY_VIDEO_TIMING.pauseFrame));
+  const mediaFrame = Math.min(STORY_VIDEO_TIMING.totalFrames - 1, rawMediaFrame);
+  const mediaTimeSeconds = mediaFrame / STORY_VIDEO_TIMING.fps;
   const playbackRate = clock.pushed ? 1 : beforePushRate;
-  if (!visible) return { mediaTimeSeconds, playbackRate, play: false, reason: "hidden" };
-  if (reducedMotion) return { mediaTimeSeconds, playbackRate, play: false, reason: "reduced-motion" };
-  if (!clock.pushed && elapsedMs >= LOTTERY_TIMING.freeze) return { mediaTimeSeconds, playbackRate, play: false, reason: "freeze" };
-  if (clock.pushed && !jackpot) return { mediaTimeSeconds, playbackRate, play: false, reason: "miss" };
-  if (mediaTimeSeconds >= STORY_VIDEO_TIMING.durationSeconds) return { mediaTimeSeconds, playbackRate, play: false, reason: "ended" };
-  return { mediaTimeSeconds, playbackRate, play: true, reason: "playing" };
+  const plan = { mediaFrame, mediaTimeSeconds, playbackRate };
+  if (!visible) return { ...plan, play: false, reason: "hidden" };
+  if (reducedMotion) return { ...plan, play: false, reason: "reduced-motion" };
+  if (!clock.pushed && elapsedMs >= LOTTERY_TIMING.freeze) return { ...plan, play: false, reason: "freeze" };
+  if (clock.pushed && !jackpot) return { ...plan, play: false, reason: "miss" };
+  if (rawMediaFrame >= STORY_VIDEO_TIMING.totalFrames) return { ...plan, play: false, reason: "ended" };
+  return { ...plan, play: true, reason: "playing" };
 }
 
 export function lotteryPresentationAt(outcome: LotteryOutcome, elapsedMs: number, drawId: number): LotteryPresentation {

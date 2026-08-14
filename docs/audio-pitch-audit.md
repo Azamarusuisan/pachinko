@@ -1,4 +1,4 @@
-# Audio pitch and high-frequency audit — 2026-08-11
+# Audio pitch and high-frequency audit — 2026-08-13
 
 ## Status
 
@@ -38,7 +38,7 @@ The source audit and offline harness both use the actual `OscillatorNode` and `B
 | storyImpact | 55→35 Hz | broadband noise | impact/unpitched |
 | storySync | 330–440–660–990 Hz, each rising about 2.86 semitones | triangle harmonics | synchronization rise |
 | storyStrike | A2–A3–A4–A5, each rising about 1.33 semitones | broadband noise | result impact |
-| kyuin | A6→A7, E7→E8, A7, plus F#8→A8 | 34 ms high-pass 6.8→10.5 kHz | jackpot confirmation only |
+| kyuin | 1.5→6.4 kHz core plus a 2.76x inharmonic metal partial | 20 ms high-pass transient at 3 kHz | jackpot confirmation only |
 | normal | C5 and G4, each rising about 1.33 semitones | none | low-intensity return |
 
 ## Runtime 48 kHz offline PCM result
@@ -58,10 +58,10 @@ The source audit and offline harness both use the actual `OscillatorNode` and `B
 | storyImpact | 0.396 | 30 | — | 0.0% | 0.04969 | 0.43% | `a4fe6b5f8dd3…` |
 | storySync | 0.521 | 85 | B5 | 93.5% | 0.05971 | 0.12% | `cf4f4ff8112d…` |
 | storyStrike | 0.631 | 89 | A3 | 80.7% | 0.1203 | 0.06% | `fa7046a47f1f…` |
-| kyuin | 0.506 | 110 | F7 | 95.6% | 0.0622 | 0.21% | `1c7fa83e1bb4…` |
+| kyuin | 0.236 | 11 | — | 30.0% | 0.04898 | 9.23% | `e8e6ef127203…` |
 | normal | 0.261 | 45 | G4 | 81.8% | 0.04235 | 0.00% | `048d5aa8e3d2…` |
 
-The `kyuin` row's dominant F7 is the energy-weighted result of the whole layered cue, not a denial of its short F#8→A8 accent. Likewise, `launch`, `nail`, `storyLaunch`, and `storyImpact` stay unpitched: their sharpness must be judged from spectral energy and transients rather than inventing a musical note.
+The old `kyuin` measured 0.506 s, 110 ms attack, and only 0.21% energy above 4 kHz, so it behaved like a slow melodic glissando. The replacement measures 0.236 s, 11 ms attack, 17.66 semitones of rise, 9.23% above 4 kHz, and zero clipped samples. The runtime harness now rejects regressions outside 0.18–0.28 s, above 20 ms attack, below 12 semitones, below 7.5% high-band energy, or with clipping.
 
 ### Admission and high-density collision stress
 
@@ -73,7 +73,7 @@ Separate unit fixtures disable cooldown to exercise the concurrency ceiling dire
 
 Nojiru implementation reuse is traceable to the fixed commit above: seeded deterministic context/noise in `packages/audio-lab/src/dsp.ts:18-21,83-88`, semitone-to-Hz conversion in `packages/audio-lab/src/se.ts:34-35`, WAV/manifest generation in `tools/assetgen/src/audio.ts:59-115`, and deterministic/catalog gates in `packages/audio-lab/tests/audio.test.ts:62-71,140-175`. Pachinko applies those patterns to its own runtime `PlayAudio` and records the exact reference revision in both the generated manifest and PCM report.
 
-The added kyuin accent is deliberately short and low-gain: a 52 ms F#8→A8 square layer plus a 34 ms 6.8→10.5 kHz air layer. It adds edge without increasing the existing main cue gains and remains gated to a confirmed jackpot.
+The revised kyuin follows the measured Nojiru confirmation control's useful structure—about 220 ms, an immediate rising sine core, a 2.76x non-integer partial, and a 20 ms high-pass transient—while remaining an original procedural render. RUSH state still begins at confirmation, but its low chord is no longer mixed over the kyuin attack. The cue remains gated to a confirmed jackpot.
 
 ## Local reference measurements
 

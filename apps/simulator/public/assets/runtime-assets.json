@@ -10,6 +10,14 @@
       "sha256": "25175631bd2c6b122d475df599128c301190e6b4e7effc88b6770b7497722234"
     },
     {
+      "path": "/assets/original-playfield-mechanism-frame-v1.png",
+      "purpose": "Original connected playfield mechanism frame artwork",
+      "source": "Generated for this project with OpenAI image generation; session 019fe9df-28c6-7380-a803-124150564ad8; transparent background supplied by generator",
+      "provenanceStatus": "verified",
+      "licenseStatus": "verified",
+      "sha256": "f461248657923adb385ab8669c294c66ce98db2f8d4feed54f7e50c2f9b598bb"
+    },
+    {
       "path": "/assets/story/keyframes/story-01.png",
       "purpose": "Story video poster",
       "source": "Original HyperFrames composition videos/pachinko-liquid-reach-motion at source SHA-256 135496def49bf4345f5b410b72a2fafd02d545f590436d604824f4bc20f8d875; frame 139 rendered with the dedicated Hermes Chrome profile; render-audit.json",

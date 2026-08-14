@@ -117,7 +117,7 @@ async function createReport(generatedAt: string, output: string, nojiruPath: str
     pachinko: {
       path: ".",
       origin: git(repoRoot, ["remote", "get-url", "origin"]).toString("utf8").trim(),
-      sourceSnapshot: await sourceSnapshot(repoRoot, [outputRelative]),
+      sourceSnapshot: await sourceSnapshot(repoRoot, [outputRelative, "docs/release-readiness.json"]),
     },
     nojiru: await repository(nojiruPath, "external:nojiru"),
     inputs: {

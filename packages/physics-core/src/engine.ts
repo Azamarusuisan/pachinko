@@ -150,6 +150,7 @@ export class PachinkoPhysicsEngine {
   private lastStepDurationMs = 0;
   private readonly substeps: number;
   private readonly heatmap: HeatmapAccumulator | null;
+  private readonly startSensors: BoardSI["sensors"];
   private velocityClampCount = 0;
   private velocitySampleCount = 0;
   private velocitySum = 0;
@@ -166,6 +167,7 @@ export class PachinkoPhysicsEngine {
     this.world = new RAPIER.World({ x: 0, y: this.board.gravity });
     this.world.lengthUnit = this.board.ball.radius * 2;
     this.world.timestep = this.fixedDt / this.substeps;
+    this.startSensors = this.board.sensors.filter((sensor) => sensor.role === "START");
     const cellSizeMillimeters = options.heatmapCellSizeMillimeters;
     this.heatmap = cellSizeMillimeters === undefined ? null : this.createHeatmap(cellSizeMillimeters);
     this.createBoardColliders();
@@ -283,6 +285,7 @@ export class PachinkoPhysicsEngine {
       this.world.step(this.eventQueue);
       this.sampleVelocities();
       this.sampleHeatmap(positionBefore);
+      this.captureStartCrossings(positionBefore);
       this.drainCollisionEvents(velocityBefore);
       this.clampVelocities();
     }
@@ -415,6 +418,9 @@ export class PachinkoPhysicsEngine {
       this.staticColliders.set(collider.handle, { id: gate.id, kind: "gate", metricKind: "rail" });
     }
     for (const sensor of this.board.sensors) {
+      // START is a physical mouth, not an overlap target. Capture it only when
+      // the ball centre crosses with enough horizontal clearance.
+      if (sensor.role === "START") continue;
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(sensor.centerMeters.x, sensor.centerMeters.y));
       const collider = this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(sensor.widthMeters / 2, sensor.heightMeters / 2)
@@ -604,6 +610,30 @@ export class PachinkoPhysicsEngine {
     else if (meta.role === "OUT") {
       this.markTerminal(ball, "out", "OUT");
       this.emit({ type: "ball.out", ballId: ball.id, sensorId: meta.id, simulationTime: this.simulationTime, tick: this.tickValue });
+    }
+  }
+
+  private captureStartCrossings(previousPositions: ReadonlyMap<string, { readonly x: number; readonly y: number }>): void {
+    if (this.startSensors.length === 0) return;
+    for (const ball of this.balls.values()) {
+      if (ball.terminal !== undefined || ball.lastWarpTick === this.tickValue) continue;
+      const previous = previousPositions.get(ball.id);
+      if (previous === undefined) continue;
+      const current = ball.body.translation();
+      const deltaY = current.y - previous.y;
+      if (deltaY <= 0) continue;
+      for (const sensor of this.startSensors) {
+        if (previous.y >= sensor.centerMeters.y || current.y < sensor.centerMeters.y) continue;
+        const centerClearance = sensor.widthMeters - this.board.ball.radius * 2;
+        if (centerClearance < 0) continue;
+        const crossing = (sensor.centerMeters.y - previous.y) / deltaY;
+        const crossingX = previous.x + (current.x - previous.x) * crossing;
+        if (Math.abs(crossingX - sensor.centerMeters.x) > centerClearance / 2 + 1e-9) continue;
+        this.emit({ type: "sensor.enter", ballId: ball.id, sensorId: sensor.id, role: sensor.role, simulationTime: this.simulationTime, tick: this.tickValue });
+        ball.sensorEnterCounts[sensor.role] = (ball.sensorEnterCounts[sensor.role] ?? 0) + 1;
+        this.markTerminal(ball, "start", "ENTERED_POCKET");
+        break;
+      }
     }
   }
 

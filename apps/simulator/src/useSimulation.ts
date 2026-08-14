@@ -43,7 +43,10 @@ export interface RuntimeStats {
   readonly stepMs: number;
   readonly activeBalls: number;
   readonly launched: number;
+  /** Physical START-mouth entries. */
   readonly start: number;
+  readonly acceptedStarts: number;
+  readonly overflowStarts: number;
   readonly out: number;
   readonly through: number;
   readonly electricSupport: number;
@@ -85,7 +88,7 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
   const debugRef = useRef<DebugDrawOptions>(DEFAULT_DEBUG_DRAW);
   const sequenceRef = useRef(0);
   const lastAutoTickRef = useRef(-Infinity);
-  const countsRef = useRef({ launched: 0, start: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 });
+  const countsRef = useRef({ launched: 0, start: 0, acceptedStarts: 0, overflowStarts: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 });
   const phaseRef = useRef<PlayPhase>("NORMAL");
   const rushShotsRef = useRef(0);
   const lotteryStateRef = useRef(0x15e7a319);
@@ -100,7 +103,7 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
   const [lottery, setLottery] = useState<LotteryPresentation>(IDLE_PRESENTATION);
   const [holdColors, setHoldColors] = useState<HoldColor[]>([]);
   const [debug, setDebugState] = useState<DebugDrawOptions>(DEFAULT_DEBUG_DRAW);
-  const [stats, setStats] = useState<RuntimeStats>({ fps: 0, physicsHz: board.physics.physicsHz, stepMs: 0, activeBalls: 0, launched: 0, start: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 });
+  const [stats, setStats] = useState<RuntimeStats>({ fps: 0, physicsHz: board.physics.physicsHz, stepMs: 0, activeBalls: 0, launched: 0, start: 0, acceptedStarts: 0, overflowStarts: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 });
 
   controlsRef.current = controls;
   debugRef.current = debug;
@@ -141,7 +144,7 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
       engineRef.current = engine;
       rendererRef.current = renderer;
       lastAutoTickRef.current = -Infinity;
-      countsRef.current = { launched: 0, start: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 };
+      countsRef.current = { launched: 0, start: 0, acceptedStarts: 0, overflowStarts: 0, out: 0, through: 0, electricSupport: 0, attacker: 0 };
       const playLottery = (rawState: number, now = performance.now()): void => {
         lotteryBusyRef.current = true;
         const drawId = ++drawIdRef.current;
@@ -178,10 +181,10 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
           cue("freeze", LOTTERY_TIMING.freeze, () => audioRef.current?.silence(Number.POSITIVE_INFINITY));
           cue("storyStrike", LOTTERY_TIMING.result, () => audioRef.current?.storyStrike());
         }
-        cue("kyuin", LOTTERY_TIMING.jackpot, () => audioRef.current?.kyuin());
-        cue("rush", LOTTERY_TIMING.jackpot, () => {
-          phaseRef.current = "RUSH"; rushShotsRef.current = RUSH_SHOTS; setPhase("RUSH"); audioRef.current?.rush();
+        cue("kyuin", LOTTERY_TIMING.jackpot, () => {
+          audioRef.current?.kyuin(); phaseRef.current = "RUSH"; rushShotsRef.current = RUSH_SHOTS; setPhase("RUSH");
         });
+        cue("rush", LOTTERY_TIMING.jackpot + 260, () => audioRef.current?.rush());
         const presentation = lotteryPresentationAt(active.outcome, elapsed, active.drawId);
         const key = presentationKey(presentation);
         if (key !== active.lastPresentationKey) {
@@ -212,6 +215,8 @@ export function useSimulation(board: BoardDefinition, controls: SimulationContro
         if (event.role === "START") {
           countsRef.current.start += 1; audioRef.current?.pocket();
           const transition = consumeLotteryStart(lotteryStateRef.current, phaseRef.current, lotteryBusyRef.current, holdQueueRef.current);
+          if (transition.disposition === "started" || transition.disposition === "held") countsRef.current.acceptedStarts += 1;
+          if (transition.disposition === "dropped-full") countsRef.current.overflowStarts += 1;
           lotteryStateRef.current = transition.randomState;
           holdQueueRef.current = [...transition.holds];
           if (transition.disposition === "held") setHoldColors(transition.holds.map((state) => createLotteryOutcome(state).holdColor));

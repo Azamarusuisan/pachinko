@@ -1,71 +1,68 @@
-# DESIGN_BRIEF — Pachinko Physics Debug Overlay
-承認: 保留（ユーザー確認待ち） / 2026-08-10 / 版: draft-v1
+# DESIGN_BRIEF — Visible Pachinko Mechanisms
+承認: ユーザー既存指示（個別許可不要） / 2026-08-13 / 版: v4
 
 ## 1. 主題
-- 対象: 実機校正のため、Rapier Colliderと盤面画像の位置関係を検証する既存Physics Lab画面
-- 読者: 物理パラメータと盤面座標を調査する開発者。デスクトップ中心、既存モバイルdrawerも維持
-- 唯一の仕事: 表示中の物体がどのCollider／Sensorと一致するかを即座に特定する
-- 成功指標: ball、nail、rail、moving mechanism、各sensor roleを個別にON/OFFでき、Physics snapshotと同じTransformで重なる
+- 対象: 物理盤面上で、羽根物・可動役物を実機部品として認識できる表示
+- 読者: 実機に近いパチンコとして遊び、玉と役物の接触を目視するユーザー
+- 唯一の仕事: 通常表示の一目で役物の位置・形・動作が分かる
+- 成功指標: 上部クラウンから側面・下部まで一体成形された機構フレーム、中段風車、左右羽根、下部ゲートが常時見え、可動部はRapierと完全同期する。遊技モードでは下部ゲート直後に操作コンソールが続き、無機能な黒い下胴を残さない
 
 ## 2. 審査
 - 最終判断者: ユーザー
-- 過去のNG: 今回はUI装飾・新演出・複雑なゲームロジックを明示的に禁止
-- 過去のOK: 既存Lab画面の高密度なデバッグ操作
+- 過去のNG: 短い黄色線、白いデバッグ線、盤面画像への上塗り、物理と別に動くSprite
+- 過去のOK: 黒クローム筐体、実機の金属・透明樹脂・強い発光、物理Source of Truth
 - 経由するレビュー: ユーザー直接
 
 ## 3. 世界観
-- 題材の固有物: 鋼球、釘、レール、センサー矩形、接触法線
-- ブランド人格: 計測器。娯楽演出より測定値を優先する
-- 参照: 既存Physics Lab UI — 配置・密度・ダーク基調を維持
-- 反面教師: 装飾カード、発光演出、意味のないアニメーション
-- 業界の型: 物理エンジンのdebug drawを踏襲し、Collider種別を線色と短いラベルで表す
+- 題材の固有物: 金属羽根、回転軸、透明樹脂、導光LED、鋼球
+- ブランド人格: 日本の実機部品。派手だが機械として接触箇所が読める
+- 参照: ユーザー提示の実機スクリーンショット — 上部主役、立体部品、黒クローム、局所発光
+- 反面教師: Colliderをそのまま太線表示するデバッグ画面
+- 業界の型: 物理軸の周囲に成形樹脂と発光部を持つ実機役物を踏襲
 
 ## 4. トークン
 ### Color
---debug-ink: #F5EDF9  ball・ラベル
---debug-collider: #78A6B8  nail・rail
---debug-start: #4ADE80  START
---debug-out: #F87171  OUT
---debug-warp: #C084FC  WARP
---debug-special: #FBBF24  attacker・電チュー・その他特殊sensor
+--mechanism-shadow: #06080A  部品の奥行き
+--mechanism-metal: #B9C3C8  金属面
+--mechanism-highlight: #F7FCFF  エッジ反射
+--mechanism-gold: #F4C95D  羽根・軸リング
+--mechanism-led: #B7FF38  発光中心
+--mechanism-resin: #5AD5FF  透明樹脂の縁
 
 ### Type
-- Display: 既存Inter / Hiragino Sans / Yu Gothic UI
-- Body: 既存和文sans-serif、既存サイズを維持
-- Data/Caption: ui-monospace
-- 和欧混植: 既存フォールバックを変更しない
+- 役物内文字は使わない。形・軸・発光だけで機能を示す
 
 ### Layout
-- コンセプト: 既存Lab drawerへtoggleを足し、盤面上はgeometry以外を増やさない
-- 密度: 高
+- コンセプト: 12mmの物理芯を、接触方向が読める成形羽根の中心に置く
+- 密度: 盤面高密度。上部クラウンを主役に、細い側面ハウジングと下部ゲートを途切れない一体部品として接続する
 - ワイヤー:
   ```text
-  [既存盤面 + Debug Overlay] [既存Lab panel]
-                            [Collider toggles]
-                            [既存metrics/calibration]
+             [上部クラウン ◉]
+  [風車◉]     [液晶・釘領域]      [◉風車]
+  [左羽根◉]                       [◉右羽根]
+                         [下部ゲート◉]
   ```
 
 ### Signature
-- Physics snapshot由来のCollider輪郭とroleラベル。盤面画像とのズレそのものを見せる
+- 金属羽根の回転軸にある黄緑LED。役物の支点と物理運動を同時に見せる
 
 ### Motion
-- 予算: 追加なし
-- 風車等の動きは演出ではなく、Rapier transformをそのまま描画する
+- 予算: 一点豪華
+- Rapier snapshotの線分から羽根角度を直接算出。独自時間・独自角度は禁止
 
 ## 5. コピー
-- トーン: 技術用語を短く表示（START、OUT、WARP、DENCHU、ATTACKER）
-- 禁止語: 演出的な煽り文句
-- 確定原稿: 上記role名
+- 役物上のコピーなし
 
 ## 6. 禁止事項
-- 新しい装飾、グラデーション、カード、演出アニメーションを追加しない
-- Pixi側で独自の風車角度を生成しない
-- Debug用geometryに盤面JSONとは別の座標定数を持たせない
+- 白いガイド線、役物名ラベル、物理と無関係な点滅、別座標のSprite
+- 中央液晶の映像面を覆う装飾、全盤面への発光塗り、浮いた単独ステッカー、同じ上部役物の二重表示、下部ゲートより下の長い黒余白
 
 ## 7. 技術制約
-- スタック: React / PixiJS / Rapier 2D。既存デザインシステムを維持
-- 対応幅: 320px以上。既存drawer動作を維持
-- a11y: toggleはlabel付きcheckbox、色だけでなくroleラベルを併用、既存reduced-motionを維持
+- React / PixiJS / Rapier 2D。既存Renderer内で描画し、依存追加なし
+- 役物の物理Colliderは変更しない
+- debug overlayは既存挙動を維持
 
 ## 改訂履歴
-- draft-v1 2026-08-10 既存UI維持・計測専用Overlay案
+- v4 2026-08-13 遊技モードの筐体を下部ゲート直後で閉じ、重複していた黒い下胴を除去
+- v3 2026-08-13 上部単独装飾を廃止し、盤面全周の一体機構フレームへ改訂
+- v2 2026-08-12 通常表示で役物が見えない問題を修正する仕様へ改訂

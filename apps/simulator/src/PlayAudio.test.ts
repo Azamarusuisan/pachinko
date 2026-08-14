@@ -142,13 +142,13 @@ describe("musical pitch cues", () => {
     expect(starts((audio) => audio.storyImpact())).toEqual([55]);
     expect(starts((audio) => audio.storySync())).toEqual([330, 440, 660, 990]);
     expect(starts((audio) => audio.storyStrike())).toEqual([110, 220, 440, 880]);
-    expect(starts((audio) => audio.kyuin())).toEqual([noteFrequency("A6"), noteFrequency("E7"), noteFrequency("A7"), noteFrequency("F#8")]);
+    expect(starts((audio) => audio.kyuin())).toEqual([1_500, 1_500 * 2.76]);
     expect(starts((audio) => audio.normal())).toEqual([523.25, 392]);
 
     const kyuin = captureAudio((audio) => audio.kyuin()).tones;
-    expect(kyuin.map((tone) => tone.end)).toEqual([noteFrequency("A7"), noteFrequency("E8"), noteFrequency("A7"), noteFrequency("A8")]);
-    expect(Math.max(...kyuin.flatMap((tone) => [tone.start ?? 0, tone.end ?? 0]))).toBeCloseTo(7_040, 3);
-    expect(captureAudio((audio) => audio.kyuin()).filters).toMatchObject([{ type: "highpass", start: 6_800, end: 10_500 }]);
+    expect(kyuin.map((tone) => tone.end)).toEqual([6_400, 6_400 * 2.76]);
+    expect(captureAudio((audio) => audio.kyuin()).filters).toMatchObject([{ type: "highpass", start: 3_000, end: 3_000 }]);
+    expect(captureAudio((audio) => audio.kyuin()).sources.every((source) => source.start === 0)).toBe(true);
 
     const nail = captureAudio((audio) => audio.nail(3.5));
     const resonance = nailCue(3.5, 0)?.resonance ?? 0;

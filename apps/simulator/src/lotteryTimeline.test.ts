@@ -133,6 +133,15 @@ describe("lottery timeline", () => {
     expect(dequeued).toEqual(accepted);
   });
 
+  it("does not consume a lottery draw when a START overflows full holds", () => {
+    const seed = 0x15e7a319;
+    expect(consumeLotteryStart(seed, "NORMAL", true, [1, 2, 3, 4])).toEqual({
+      randomState: seed,
+      holds: [1, 2, 3, 4],
+      disposition: "dropped-full",
+    });
+  });
+
   it("does not consume the normal lottery state during RUSH", () => {
     const seed = 0x15e7a319;
     expect(consumeLotteryStart(seed, "RUSH", true, [1, 2])).toEqual({ randomState: seed, holds: [1, 2], disposition: "ignored-rush" });
@@ -184,8 +193,17 @@ describe("lottery timeline", () => {
   it("maps the host FREEZE and PUSH boundary to HyperFrames 139/140 at 30 fps", () => {
     const freeze = storyPlaybackPlanAt({ active: true, drawId: 1, elapsedMs: LOTTERY_TIMING.freeze, pushed: false }, true, false, true);
     const resumed = storyPlaybackPlanAt({ active: true, drawId: 1, elapsedMs: LOTTERY_TIMING.result, pushed: true }, true, false, true);
-    expect(freeze).toMatchObject({ mediaTimeSeconds: STORY_VIDEO_TIMING.pauseFrame / STORY_VIDEO_TIMING.fps, play: false, reason: "freeze" });
-    expect(resumed).toMatchObject({ mediaTimeSeconds: STORY_VIDEO_TIMING.resumeFrame / STORY_VIDEO_TIMING.fps, play: true, reason: "playing" });
+    expect(freeze).toMatchObject({ mediaFrame: 139, mediaTimeSeconds: STORY_VIDEO_TIMING.pauseFrame / STORY_VIDEO_TIMING.fps, play: false, reason: "freeze" });
+    expect(resumed).toMatchObject({ mediaFrame: 140, mediaTimeSeconds: STORY_VIDEO_TIMING.resumeFrame / STORY_VIDEO_TIMING.fps, play: true, reason: "playing" });
+  });
+
+  it("quantizes every playback target to an encoded video frame", () => {
+    for (let elapsedMs = 0; elapsedMs <= LOTTERY_TIMING.jackpotFinish; elapsedMs += 17) {
+      const pushed = elapsedMs >= LOTTERY_TIMING.result;
+      const plan = storyPlaybackPlanAt({ active: true, drawId: 1, elapsedMs, pushed }, true, false, true);
+      expect(plan.mediaTimeSeconds).toBeCloseTo(plan.mediaFrame / STORY_VIDEO_TIMING.fps, 12);
+      expect(Number.isInteger(plan.mediaFrame)).toBe(true);
+    }
   });
 
   it("holds a miss on the first post-PUSH frame but lets a jackpot continue", () => {

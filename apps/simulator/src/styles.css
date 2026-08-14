@@ -682,7 +682,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .file-button:fo
 .play-mode .layout { max-width: 430px; height: auto; min-height: 0; display: block; }
 .play-mode .machine { height: auto; padding: 3px 3px 0; border-radius: 14px; background: #08070a; }
 .play-mode .machine-top { display: none; }
-.play-mode .cabinet-stage { flex: none; aspect-ratio: 941 / 1672; }
+.play-mode .cabinet-stage { flex: none; aspect-ratio: 10 / 11; }
+.play-mode .cabinet-art { object-fit: cover; object-position: center top; }
+.play-mode .board-plane { top: 18%; }
 .play-mode .machine-console { height: 76px; margin-top: -1px; border: 1px solid #4c354f; border-top: 0; }
 .lab-mode .cabinet-stage { min-height: 620px; }
 .lab-mode .header-actions .mode-chip { display: none; }

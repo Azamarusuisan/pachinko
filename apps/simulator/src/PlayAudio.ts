@@ -192,12 +192,11 @@ export class PlayAudio {
   storyStrike(): void { this.playCue("storyStrike", () => { this.noise(.42, .13); this.chord([110, 220, 440, 880], .48, .055); }); }
   kyuin(): void {
     this.playCue("kyuin", () => {
-      const accentStart = noteFrequency("F#8");
-      this.tone(noteFrequency("A6"), .22, .058, "sine", noteFrequency("A7") - noteFrequency("A6"));
-      this.tone(noteFrequency("E7"), .34, .052, "sine", noteFrequency("E8") - noteFrequency("E7"), .11);
-      this.tone(noteFrequency("A7"), .18, .024, "sine", 0, .31);
-      this.tone(accentStart, .052, .014, "square", noteFrequency("A8") - accentStart, .008);
-      this.noise(.034, .009, "highpass", 6_800, .8, .012, 10_500, hash32(this.nextCueCounter(), 0x4b595549));
+      const coreStart = 1_500;
+      const coreEnd = 6_400;
+      this.tone(coreStart, .22, .11, "sine", coreEnd - coreStart);
+      this.tone(coreStart * 2.76, .1, .1, "sine", coreEnd * 2.76 - coreStart * 2.76);
+      this.noise(.02, .05, "highpass", 3_000, .8, 0, 3_000, hash32(this.nextCueCounter(), 0x4b595549));
     });
   }
   normal(): void { this.playCue("normal", () => this.chord([523.25, 392], 0.2, 0.035)); }

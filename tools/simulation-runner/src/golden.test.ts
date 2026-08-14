@@ -6,7 +6,7 @@ const metrics: SimulationMetrics = {
   boardId: "eva15_inspired_physics_v2", boardVersion: "test", physicsVersion: "test", seed: 123456,
   launchPower: 0.68, fireRate: 100, physicsHz: 240, ccdEnabled: true, substeps: 1,
   totalBalls: 1000, startWins: 100, outCount: 900, otherSensorCount: 0, sensorEnterCounts: {}, timeoutCount: 0, ballsLaunched: 1000,
-  startEntries: 100, outEntries: 900, otherPocketEntries: 0, timeouts: 0, startRate: 0.1,
+  startEntries: 100, startPocketEntries: 100, outEntries: 900, otherPocketEntries: 0, timeouts: 0, startRate: 0.1, physicalStartRatePerLaunchedBall: 0.1,
   outRate: 0.9, averageLifetime: 3, medianLifetime: 3, p95Lifetime: 4,
   averageCollisionCount: 20, medianCollisionCount: 20, p95CollisionCount: 30,
   averageVelocity: 1, maxVelocity: 5, averageCollisionSpeedBefore: 2, averageCollisionSpeedAfter: 1.8,
@@ -23,7 +23,7 @@ describe("golden comparison", () => {
     const baseline = createGoldenBaseline(metrics, "2026-08-08T00:00:00.000Z");
     expect(compareGolden(metrics, baseline)).toEqual([]);
     expect(compareGolden({ ...metrics, startRate: 0.2 }, baseline)).toEqual([
-      { metric: "startRate", expected: 0.1, actual: 0.2, delta: 0.1, tolerance: 0.005 },
+      { metric: "startRate", expected: 0.1, actual: 0.2, delta: 0.1, tolerance: 0 },
     ]);
   });
 });

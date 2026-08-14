@@ -1,4 +1,4 @@
-# Observed calibration dataset v1
+# Observed calibration data formats
 
 `parseObservedCapture` is the trust boundary for frame-level annotations from a real-machine video. `summarizeObservedCapture` converts a valid capture into the existing aggregate `ObservedDataset`; it does not invent missing measurements, estimate a homography, choose target values, or optimize physics parameters.
 
@@ -31,9 +31,9 @@ The validator rejects duplicate ball IDs, backwards tracks, collisions outside a
 
 `frameRateHz` must be at least 240. This is a project evidence gate, not a claim that 240 fps resolves every impact. Full-board trajectories use 240 fps or faster; isolated nail/rail impacts should be captured separately at 1,000 fps or faster.
 
-## Required capture fields
+## Required aggregate dataset fields
 
-- `schemaVersion`: currently `"1"`.
+- `schemaVersion`: frame captures use `"1"`; aggregate datasets use `"2"` because v2 makes `ballCountBasis` mandatory.
 - `datasetId`: stable unique slug for the capture.
 - `split`: `TRAIN` or `HOLDOUT`.
 - `capturedAt`: ISO 8601 timestamp including a timezone offset.
@@ -41,14 +41,15 @@ The validator rejects duplicate ball IDs, backwards tracks, collisions outside a
 - `rightsStatus`: `CLEARED` or `INTERNAL_RESEARCH_ONLY`.
 - `provenanceStatus`: `FIRST_PARTY_CAPTURE`, `LICENSED_THIRD_PARTY`, or `PUBLIC_DOMAIN`.
 - `machineId` and `boardId`: stable identifiers; do not use a model nickname as both.
-- `ballCount`, `launchPower`, `fireRatePerMinute`, and signed `boardTiltDegrees`: settings used for the whole capture. Split a recording when any changes.
+- `ballCount` and the required literal `ballCountBasis: "LAUNCHED_BALLS"`: every rate in this physics dataset uses actually launched balls. Borrowed-ball and prize-replay denominators are rejected until economy accounting exists.
+- `launchPower`, `fireRatePerMinute`, and signed `boardTiltDegrees`: settings used for the whole capture. Split a recording when any changes.
 - `measurements`: at least one metric that was actually measured. Never fill unavailable metrics with zero.
 
 Trajectory summaries also require `trajectorySampleRateHz`. Heatmap summaries require `heatmapCellSizeMillimeters`; board coordinates are millimetres with the same origin and Y direction documented by the simulator coordinate transform. Raw video remains identified by its SHA-256; re-encoding is a different source.
 
 ## Aggregate metric names and units
 
-- Outcomes: `startRate`, `outRate` (terminal events divided by all launched balls).
+- Outcomes: `startRate`, `outRate` (terminal events divided by all launched balls). These must never contain a borrowed-ball or prize-replay rate.
 - Dwell: `averageLifetime`, `medianLifetime`, `p95Lifetime` (seconds from launch to terminal event or timeout).
 - Collisions: `averageCollisionCount`, `medianCollisionCount`, `p95CollisionCount` (contact events per ball), `collisionFrequencyPerSecond` (contacts divided by accumulated ball-seconds), `averageReflectionAngleDegrees` (absolute direction change from the immediately pre-contact velocity to post-contact velocity for the tagged calibration contacts).
 - Velocity: `averageVelocity`, `p95Velocity`, `maxVelocity` (metres per second, sampled uniformly at `trajectorySampleRateHz`).
