@@ -1,0 +1,35 @@
+{
+  "renderer": "Hermes Chrome CDP deterministic seek + ffmpeg",
+  "endpoint": "http://127.0.0.1:9223",
+  "sourceCommit": "working-tree",
+  "layout": {
+    "width": 640,
+    "height": 360,
+    "devicePixelRatio": 1,
+    "timelineDuration": 8.48
+  },
+  "probe": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 640,
+        "height": 360,
+        "r_frame_rate": "30/1",
+        "nb_read_frames": "255"
+      }
+    ],
+    "format": {
+      "duration": "8.500000"
+    }
+  },
+  "hashes": {
+    "brief": "0a6287f740b602b2335fd1a7fd49d14ca1c98520e093d63b355a59e0d3bb4f98",
+    "composition": "135496def49bf4345f5b410b72a2fafd02d545f590436d604824f4bc20f8d875",
+    "motionPlan": "fcf00a2b2725a60e59b4775efe756077bc003e57a51cc2fef3bd6b8c937c1447",
+    "shotPlan": "2c1588b95a5cd9fe97c9cd44560666e5dae9e8ec775ba5504c7daf08e010320d",
+    "video": "d462f57b551b014c0a96295cdd915375f175146fd9e777639d14cb15f0133827",
+    "poster": "9848e713a6ed0efe451e429a636b1e13e04a9bcb95723ab5b814474447c9c146"
+  },
+  "runtimeErrors": []
+}

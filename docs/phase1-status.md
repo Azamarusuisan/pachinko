@@ -1,6 +1,6 @@
 # Phase 1 Requirement Evidence
 
-Status meanings: `PASS` = direct evidence exists, `IMPLEMENTED-UNVERIFIED` = source exists but has not run, `BLOCKED` = external state prevents evidence, `MISSING` = work remains.
+Status meanings: `PASS` = direct evidence exists, `IMPLEMENTED-UNVERIFIED` = source exists but has not run, `NOT-RUN` = the current worktree has not been exercised by that command, `BLOCKED` = external state prevents evidence, `MISSING` = work remains.
 
 | Requirement | Status | Authoritative evidence needed |
 |---|---|---|
@@ -15,24 +15,24 @@ Status meanings: `PASS` = direct evidence exists, `IMPLEMENTED-UNVERIFIED` = sou
 | Seeded determinism and input replay | PASS | Equal replay event/completion digests |
 | Typed required physics events | PASS | Event-system and sensor/collision tests |
 | No hidden attraction/trajectory correction | PASS | Physics-core source audit; no position mutation after spawn |
-| Manual, Space-hold, and auto fire | IMPLEMENTED-UNVERIFIED | Manual fire covered by E2E (launch counter 0 to 1); Space-hold and auto fire still lack browser evidence |
+| Manual, Space-hold, and auto fire | IMPLEMENTED-UNVERIFIED | Source and scenarios exist; the small-window harness currently covers lottery presentation rather than these controls |
 | REALISTIC 100 balls/min independent of speed | PASS | Input and speed-isolation tests |
-| Pixi rendering and responsive mobile drawer | PASS | `npm run test:e2e` 10 passed / 2 skipped across four Playwright projects; canvas and cabinet art visible, mobile drawer opens the calibration panel |
+| Pixi rendering and responsive mobile drawer | IMPLEMENTED-UNVERIFIED | Pixi initializes in the Hermes lottery harness; the responsive drawer scenarios were not rerun |
 | All debug toggles including contact point/normal | IMPLEMENTED-UNVERIFIED | Rapier contact data rendered in browser |
 | Calibration before/after comparison | PASS | Calibration comparison test; worker UI awaits manual check |
 | Simple validated Board Editor | PASS | Pure editor and Board JSON validation tests; browser interaction awaits manual check |
 | Effect/audio registries and lazy-load interfaces | PASS | Manifest tests and typecheck |
 | 3D mechanism boundary only | PASS | Typecheck; no Three/GLB runtime in Phase 1 |
 | Integer append-only economy boundary; redemption disabled | PASS | Economy tests |
-| 100-ball run | PASS | Complete finite run; zero remaining bodies |
-| 1000-ball run | PASS | Complete finite run; zero remaining bodies |
-| 10,000-ball run | PASS | v2 complete finite run in 22.01 seconds; zero timeout and remaining bodies |
-| Golden regression | PASS | Separate v1/v2 baselines; v2 seed 123456 comparison test |
+| 100-ball run | PASS | Current v2.5.1 CLI: finite, zero timeout and remaining bodies |
+| 1000-ball run | PASS | Current v2.5.1 baseline: finite, zero timeout and remaining bodies; this is deterministic regression evidence, not real-machine calibration |
+| 10,000-ball run | PASS | Current v2.5.1 16/32-substep investigation completed with finite values and zero timeout, remaining bodies, and clamp activations; the convergence gate still fails |
+| Golden regression | PASS | Baseline and Golden comparison tests are included in the passing full suite; `baseline:check` records final report drift separately |
 | `npm install` | PASS | User command exit 0; lockfile updated offline; audit currently reports zero vulnerabilities |
-| `npm test` | PASS | 14 files and 35 tests pass |
-| `npm run build` | PASS | TypeScript project build and Vite production build exit 0 |
+| `npm test` | PASS | Current CLI run: 27 files and 151 tests pass |
+| `npm run build` | PASS | TypeScript project build and Vite production build exit 0; Vite reports only the non-fatal large-chunk warning |
 | lint/typecheck | PASS | Both commands exit 0 |
-| PC Safari/Chrome validation | PASS | Automated instead of manual: Playwright `webkit-desktop` (Safari engine) and `chromium-desktop` both pass against the running dev server |
+| PC Safari/Chrome validation | IMPLEMENTED-UNVERIFIED | Dedicated Hermes Chrome ran at 500×375 in the background; Safari/WebKit and the full Playwright project matrix were not rerun |
 
 This table must be updated from command output, never from intent or the presence of source files alone.
 
@@ -42,10 +42,21 @@ Right-play rebuild 2.1 adds a shared-launcher physical split, dedicated right
 route sensors, a deterministic visual GLB, and separate 10,000-ball evidence for
 left and right handle settings.
 
-Browser evidence is now automated. The dev server runs on `127.0.0.1:5173` and
-`npm run test:e2e` drives it through four projects, so Safari/Chrome no longer
-require a hand-recorded manual gate. Playwright browsers must be installed once
-with `npx playwright install chromium webkit`.
+Browser scenarios remain in the repository. After the user allowed a tiny test
+window, `test:hermes-small` connected only to the dedicated Hermes profile,
+created isolated 500×375 contexts in the background, took no screenshots, and
+returned the context count to its original value. Both miss and jackpot have
+passing runs, but the gate is not stable: one cold jackpot run recorded a
+366.7 ms frame gap and two dropped frames, and a later miss run recorded 58.2 ms
+semantic skew against the 50 ms limit. Full browser E2E remains pending.
+
+The current release-asset CLI gate passes for three runtime assets. Nojiru is
+clean at `HEAD = origin/main = bbefab094522f17c85342f2fe4822f7e881292eb`.
+There are zero qualifying real-machine 240 fps captures, zero ObservedCapture
+records, and no independent HOLDOUT evaluation, so real-machine calibration is
+blocked. The remaining physics blocker is the unresolved Rapier grazing
+separation/re-contact timestep sensitivity described in
+`docs/simulation-convergence.md`.
 
 Blender runs headless with `--factory-startup`; without that flag it aborts
 during Metal initialization on this machine. Two GLBs are kept on purpose:

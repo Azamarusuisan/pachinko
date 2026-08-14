@@ -17,6 +17,7 @@ export interface GoldenBaseline {
     readonly launchPower: 0.68;
     readonly fireRate: 100;
     readonly physicsHz: 240;
+    readonly substeps: number;
     readonly ccdEnabled: true;
   };
   readonly measuredAt: string;
@@ -51,7 +52,7 @@ export function createGoldenBaseline(metrics: SimulationMetrics, measuredAt: str
   return {
     scenario: {
       boardId: "eva15_inspired_physics_v2", boardVersion: metrics.boardVersion, physicsVersion: metrics.physicsVersion,
-      seed: 123456, balls: 1000, launchPower: 0.68, fireRate: 100, physicsHz: 240, ccdEnabled: true,
+      seed: 123456, balls: 1000, launchPower: 0.68, fireRate: 100, physicsHz: 240, substeps: metrics.substeps, ccdEnabled: true,
     },
     measuredAt,
     metrics: {
@@ -62,6 +63,6 @@ export function createGoldenBaseline(metrics: SimulationMetrics, measuredAt: str
       centerRouteRate: metrics.centerRouteRate,
       rightRouteRate: metrics.rightRouteRate,
     },
-    tolerances: { startRate: 0.005, averageCollisionCount: 0.25, averageLifetime: 0.05, routeRate: 0.01 },
+    tolerances: { startRate: 0, averageCollisionCount: 0, averageLifetime: 0, routeRate: 0 },
   };
 }

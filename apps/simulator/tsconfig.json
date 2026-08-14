@@ -2,5 +2,5 @@
   "extends":"../../tsconfig.base.json",
   "compilerOptions":{"outDir":"dist-types","rootDir":"../..","jsx":"react-jsx","lib":["ES2022","DOM","DOM.Iterable"]},
   "include":["src/**/*.ts","src/**/*.tsx","../../boards/prototype/*.json"],
-  "references":[{"path":"../../packages/board-schema"},{"path":"../../packages/physics-core"},{"path":"../../packages/renderer-pixi"},{"path":"../../packages/input-system"},{"path":"../../tools/simulation-runner"},{"path":"../../tools/board-editor"},{"path":"../../tools/calibration"}]
+  "references":[{"path":"../../packages/board-schema"},{"path":"../../packages/physics-core"},{"path":"../../packages/renderer-pixi"},{"path":"../../packages/input-system"},{"path":"../../packages/effect-system"},{"path":"../../tools/simulation-runner"},{"path":"../../tools/board-editor"},{"path":"../../tools/calibration"}]
 }

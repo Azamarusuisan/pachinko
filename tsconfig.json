@@ -11,6 +11,8 @@
     { "path": "tools/simulation-runner" },
     { "path": "tools/board-editor" },
     { "path": "tools/calibration" },
+    { "path": "tools/audio-corpus" },
+    { "path": "tools/physics-playground" },
     { "path": "apps/simulator" }
   ]
 }

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=640, height=360">
+    <title>Pachinko Liquid Reach</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --black: #010308;
+        --bg: #02060d;
+        --bg-raised: #071827;
+        --cyan: #00e5ff;
+        --red-hot: #ff2438;
+        --red-deep: #8a0717;
+        --gold: #ffb21c;
+        --gold-light: #ffe18a;
+        --white: #ffffff;
+        --magenta: #ff2bd6;
+        --violet: #705cff;
+        --green: #00f0a8;
+        --extrude-outer: #100207;
+        --extrude-inner: #3a0710;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 640px;
+        height: 360px;
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      body {
+        font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+      }
+
+      @font-face {
+        font-family: "Hiragino Sans";
+        src: local("Hiragino Sans");
+        font-weight: 900;
+      }
+
+      @font-face {
+        font-family: "Yu Gothic";
+        src: local("Yu Gothic");
+        font-weight: 900;
+      }
+
+      #stage {
+        position: relative;
+        width: 640px;
+        height: 360px;
+        overflow: hidden;
+      }
+
+      #motion-layer {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      #backdrop,
+      #rail-field,
+      #bloom-field {
+        position: absolute;
+        inset: 0;
+      }
+
+      #backdrop {
+        z-index: 0;
+        background: radial-gradient(circle at 50% 48%, var(--bg-raised) 0%, var(--bg) 48%, var(--black) 100%);
+        box-shadow: inset 0 0 72px 24px var(--black);
+      }
+
+      #safe-well {
+        position: absolute;
+        left: 150px;
+        top: 95px;
+        width: 340px;
+        height: 190px;
+        z-index: 2;
+        background: radial-gradient(circle, var(--bg) 0%, var(--black) 88%);
+        box-shadow: inset 0 0 46px var(--black);
+      }
+
+      #bloom-field {
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .corner-bloom {
+        position: absolute;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        opacity: 0;
+        color: var(--cyan);
+        background: radial-gradient(circle, currentColor 0%, transparent 69%);
+        mix-blend-mode: screen;
+        will-change: transform, opacity, color;
+      }
+
+      #bloom-tl {
+        left: -105px;
+        top: -105px;
+      }
+
+      #bloom-tr {
+        right: -105px;
+        top: -105px;
+      }
+
+      #bloom-br {
+        right: -105px;
+        bottom: -105px;
+      }
+
+      #bloom-bl {
+        left: -105px;
+        bottom: -105px;
+      }
+
+      #rail-field {
+        z-index: 3;
+        transform-origin: 320px 180px;
+        will-change: transform;
+      }
+
+      .rail {
+        position: absolute;
+        overflow: hidden;
+        border: 2px solid currentColor;
+        border-radius: 3px;
+        opacity: 0;
+        color: var(--cyan);
+        background: transparent;
+        box-shadow: 0 0 7px currentColor, inset 0 0 6px currentColor;
+        transform-origin: center;
+        will-change: transform, opacity, color;
+      }
+
+      .rail::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border: 1px solid rgb(255 255 255 / 30%);
+        opacity: 0.5;
+      }
+
+      #rail-1 {
+        left: 112px;
+        top: 62px;
+        width: 416px;
+        height: 256px;
+      }
+
+      #rail-2 {
+        left: 120px;
+        top: 68px;
+        width: 400px;
+        height: 244px;
+      }
+
+      #rail-3 {
+        left: 126px;
+        top: 73px;
+        width: 388px;
+        height: 234px;
+      }
+
+      #rail-4 {
+        left: 132px;
+        top: 79px;
+        width: 376px;
+        height: 222px;
+      }
+
+      .current {
+        position: absolute;
+        z-index: 2;
+        display: block;
+        opacity: 0;
+        color: inherit;
+        box-shadow: 0 0 9px currentColor;
+        mix-blend-mode: screen;
+        will-change: transform, opacity;
+      }
+
+      .current.horizontal {
+        width: 54px;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, currentColor 58%, var(--white));
+      }
+
+      .current.vertical {
+        width: 3px;
+        height: 44px;
+        background: linear-gradient(180deg, transparent, currentColor 58%, var(--white));
+      }
+
+      .current.reverse.horizontal {
+        background: linear-gradient(270deg, transparent, currentColor 58%, var(--white));
+      }
+
+      .current.reverse.vertical {
+        background: linear-gradient(0deg, transparent, currentColor 58%, var(--white));
+      }
+
+      .current.top {
+        left: 0;
+        top: 0;
+      }
+
+      .current.right {
+        right: 0;
+        top: 0;
+      }
+
+      .current.bottom {
+        left: 0;
+        bottom: 0;
+      }
+
+      .current.left {
+        left: 0;
+        top: 0;
+      }
+
+      #gekiatsu {
+        position: absolute;
+        left: 180px;
+        top: 18px;
+        width: 280px;
+        height: 68px;
+        z-index: 5;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      #word-motion,
+      #word-stack,
+      .word-layer,
+      #shine-mask,
+      #shine-text {
+        position: absolute;
+        inset: 0;
+        width: 280px;
+        height: 68px;
+      }
+
+      #word-motion {
+        opacity: 0;
+        transform-origin: center;
+        will-change: transform, opacity;
+      }
+
+      #word-stack {
+        will-change: transform;
+      }
+
+      .word-layer,
+      #shine-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 58px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+      }
+
+      .word-depth {
+        color: var(--extrude-inner);
+        transform: translate(calc(var(--depth) * 0.72px), calc(var(--depth) * 0.48px));
+        text-shadow: 0 1px 0 var(--black);
+      }
+
+      .word-depth:nth-child(-n + 6) {
+        color: var(--extrude-outer);
+      }
+
+      #word-face {
+        color: var(--red-hot);
+        -webkit-text-stroke: 3px var(--gold-light);
+        paint-order: stroke fill;
+        text-shadow: 0 -1px 0 var(--white), 0 2px 0 var(--red-deep), 0 0 10px var(--red-hot);
+      }
+
+      #shine-mask {
+        width: 30px;
+        overflow: hidden;
+        opacity: 0.95;
+        clip-path: polygon(100% 0, 38% 0, 0 100%, 62% 100%);
+        will-change: transform;
+      }
+
+      #shine-text {
+        color: var(--white);
+        text-shadow: 0 0 5px var(--white);
+        will-change: transform;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-ie65" id="stage" data-composition-id="pachinko-liquid-reach" data-start="0" data-duration="8.5" data-fps="30" data-width="640" data-height="360">
+      <section data-hf-id="hf-oa9c" id="motion-layer" class="clip" data-start="0" data-duration="8.5" data-track-index="1" aria-label="Pachinko reach expectation animation">
+        <div data-hf-id="hf-us1o" id="backdrop" aria-hidden="true"></div>
+        <div data-hf-id="hf-pdl4" id="bloom-field" aria-hidden="true">
+          <div data-hf-id="hf-59jh" id="bloom-tl" class="corner-bloom"></div>
+          <div data-hf-id="hf-yc5v" id="bloom-tr" class="corner-bloom"></div>
+          <div data-hf-id="hf-b2xh" id="bloom-br" class="corner-bloom"></div>
+          <div data-hf-id="hf-p8cr" id="bloom-bl" class="corner-bloom"></div>
+        </div>
+
+        <!-- The host's reels occupy x=150..490, y=95..285; keep this well dark and empty. -->
+        <div data-hf-id="hf-ctmy" id="safe-well" aria-hidden="true"></div>
+
+        <div data-hf-id="hf-3lo5" id="rail-field" aria-hidden="true">
+          <div data-hf-id="hf-qt8g" id="rail-1" class="rail">
+            <span data-hf-id="hf-5lnl" id="current-1a" class="current horizontal top"></span>
+            <span data-hf-id="hf-f0vr" id="current-1b" class="current vertical right"></span>
+          </div>
+          <div data-hf-id="hf-1oq3" id="rail-2" class="rail">
+            <span data-hf-id="hf-dc5a" id="current-2a" class="current horizontal reverse bottom"></span>
+            <span data-hf-id="hf-z3zh" id="current-2b" class="current vertical reverse left"></span>
+          </div>
+          <div data-hf-id="hf-xqm2" id="rail-3" class="rail">
+            <span data-hf-id="hf-arun" id="current-3a" class="current horizontal top"></span>
+            <span data-hf-id="hf-pcot" id="current-3b" class="current vertical right"></span>
+          </div>
+          <div data-hf-id="hf-eywd" id="rail-4" class="rail">
+            <span data-hf-id="hf-w7u8" id="current-4a" class="current horizontal reverse bottom"></span>
+            <span data-hf-id="hf-ulob" id="current-4b" class="current vertical reverse left"></span>
+          </div>
+        </div>
+
+        <div data-hf-id="hf-4vxa" id="gekiatsu" role="img" aria-label="激熱">
+          <div data-hf-id="hf-z3lk" id="word-motion">
+            <div data-hf-id="hf-q4by" id="word-stack">
+              <span data-hf-id="hf-kw8e" class="word-layer word-depth" style="--depth: 12" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-bqwd" class="word-layer word-depth" style="--depth: 11" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-81z4" class="word-layer word-depth" style="--depth: 10" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-9cj2" class="word-layer word-depth" style="--depth: 9" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-fhsz" class="word-layer word-depth" style="--depth: 8" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-l7x8" class="word-layer word-depth" style="--depth: 7" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-nhih" class="word-layer word-depth" style="--depth: 6" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-lw22" class="word-layer word-depth" style="--depth: 5" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-g98f" class="word-layer word-depth" style="--depth: 4" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-ouns" class="word-layer word-depth" style="--depth: 3" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-qgjp" class="word-layer word-depth" style="--depth: 2" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-fifa" class="word-layer word-depth" style="--depth: 1" aria-hidden="true" data-layout-ignore="">激熱</span>
+              <span data-hf-id="hf-zt79" id="word-face" class="word-layer" aria-hidden="true">激熱</span>
+              <span data-hf-id="hf-ctqw" id="shine-mask" aria-hidden="true" data-layout-ignore="">
+                <span data-hf-id="hf-spje" id="shine-text">激熱</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+
+      const css = getComputedStyle(document.documentElement);
+      const color = (name) => css.getPropertyValue(name).trim();
+      const palette = {
+        cyan: color("--cyan"),
+        redHot: color("--red-hot"),
+        redDeep: color("--red-deep"),
+        gold: color("--gold"),
+        goldLight: color("--gold-light"),
+        magenta: color("--magenta"),
+        violet: color("--violet"),
+        green: color("--green"),
+      };
+
+      const tl = gsap.timeline({ paused: true });
+
+      const railSpecs = [
+        { id: "#rail-1", startX: 1.45, startY: 1.32, heatX: 1.24, heatY: 1.18 },
+        { id: "#rail-2", startX: 1.5, startY: 1.38, heatX: 1.2, heatY: 1.16 },
+        { id: "#rail-3", startX: 1.54, startY: 1.42, heatX: 1.17, heatY: 1.13 },
+        { id: "#rail-4", startX: 1.58, startY: 1.48, heatX: 1.14, heatY: 1.1 },
+      ];
+      const spectrum = [palette.magenta, palette.violet, palette.green, palette.cyan];
+
+      railSpecs.forEach((rail, index) => {
+        tl.fromTo(
+          rail.id,
+          { opacity: 0, scaleX: rail.startX, scaleY: rail.startY, color: palette.cyan },
+          {
+            opacity: 0.9,
+            scaleX: rail.startX,
+            scaleY: rail.startY,
+            color: palette.cyan,
+            duration: 0.32,
+            ease: "power3.out",
+          },
+          0.2 + index * 0.03,
+        );
+        tl.to(
+          rail.id,
+          {
+            scaleX: rail.heatX,
+            scaleY: rail.heatY,
+            color: index % 2 ? palette.redDeep : palette.redHot,
+            opacity: 0.96,
+            duration: 1.1,
+            ease: "power3.inOut",
+          },
+          1,
+        );
+        tl.to(
+          rail.id,
+          {
+            scaleX: 1,
+            scaleY: 1,
+            color: index % 2 ? palette.goldLight : palette.gold,
+            opacity: 0.94,
+            duration: 1.08,
+            ease: "expo.out",
+          },
+          2.9,
+        );
+        tl.to(
+          rail.id,
+          {
+            scaleX: rail.startX,
+            scaleY: rail.startY,
+            color: spectrum[index],
+            opacity: 1,
+            duration: 0.68,
+            ease: "power4.out",
+          },
+          4.667,
+        );
+        tl.to(rail.id, { color: spectrum[(index + 1) % spectrum.length], duration: 0.36, ease: "sine.inOut" }, 5.35);
+        tl.to(
+          rail.id,
+          {
+            keyframes: [
+              { color: spectrum[(index + 2) % spectrum.length], duration: 0.645, ease: "sine.inOut" },
+              { color: spectrum[(index + 3) % spectrum.length], duration: 0.645, ease: "sine.inOut" },
+              { color: spectrum[index], duration: 0.645, ease: "sine.inOut" },
+              { color: spectrum[(index + 1) % spectrum.length], duration: 0.645, ease: "sine.inOut" },
+            ],
+          },
+          5.9,
+        );
+      });
+
+      const currentSpecs = [
+        ["#current-1a", "x", 0, 362],
+        ["#current-1b", "y", 0, 212],
+        ["#current-2a", "x", 346, 0],
+        ["#current-2b", "y", 200, 0],
+        ["#current-3a", "x", 0, 334],
+        ["#current-3b", "y", 0, 190],
+        ["#current-4a", "x", 322, 0],
+        ["#current-4b", "y", 178, 0],
+      ];
+      const at = (axis, value, vars) => ({ ...vars, [axis]: value });
+
+      currentSpecs.forEach(([selector, axis, from, to], index) => {
+        tl.fromTo(
+          selector,
+          at(axis, from, { opacity: 0 }),
+          at(axis, to, { opacity: 0.76, duration: 0.68, ease: "power1.out" }),
+          0.22 + index * 0.01,
+        );
+        tl.fromTo(
+          selector,
+          at(axis, from, { opacity: 0.45 }),
+          at(axis, to, { opacity: 0.96, duration: 0.45, repeat: 3, ease: "none", immediateRender: false }),
+          1,
+        );
+        tl.fromTo(
+          selector,
+          at(axis, from, { opacity: 0.8 }),
+          at(axis, to, { opacity: 0.22, duration: 1.15, ease: "power3.out", immediateRender: false }),
+          2.9,
+        );
+        tl.fromTo(
+          selector,
+          at(axis, to, { opacity: 0.35 }),
+          at(axis, from, { opacity: 1, duration: 0.72, ease: "expo.out", immediateRender: false }),
+          4.667,
+        );
+        tl.to(selector, { opacity: 0.58, duration: 0.34, ease: "sine.out" }, 5.55);
+        tl.fromTo(
+          selector,
+          at(axis, from, { opacity: 0.58 }),
+          at(axis, to, {
+            opacity: 0.74,
+            duration: 0.84,
+            repeat: 2,
+            yoyo: true,
+            ease: "sine.inOut",
+            immediateRender: false,
+          }),
+          5.9,
+        );
+      });
+
+      const bloomSpecs = [
+        ["#bloom-tl", palette.magenta],
+        ["#bloom-tr", palette.violet],
+        ["#bloom-br", palette.green],
+        ["#bloom-bl", palette.cyan],
+      ];
+
+      bloomSpecs.forEach(([selector, rainbow], index) => {
+        tl.fromTo(
+          selector,
+          { opacity: 0, scale: 0.65, color: palette.cyan },
+          { opacity: 0.16, scale: 1, color: palette.cyan, duration: 0.62, ease: "sine.out" },
+          0.2 + index * 0.025,
+        );
+        tl.to(selector, { opacity: 0.24, color: palette.redHot, duration: 0.9, ease: "power2.inOut" }, 1);
+        tl.to(selector, { opacity: 0.19, color: palette.gold, duration: 1.02, ease: "sine.inOut" }, 2.9);
+        tl.to(selector, { opacity: 0.42, scale: 1.48, color: rainbow, duration: 0.45, ease: "power4.out" }, 4.667);
+        tl.to(selector, { opacity: 0.3, scale: 1.28, duration: 0.4, ease: "sine.out" }, 5.45);
+      });
+
+      // Two restrained heat pulses, a pause-ready gold breath, then the winning release pulse.
+      tl.fromTo("#rail-field", { scale: 1 }, { scale: 1.012, duration: 0.08, ease: "sine.inOut" }, 1.55);
+      tl.to("#rail-field", { scale: 1, duration: 0.09, ease: "sine.inOut" }, 1.64);
+      tl.to("#rail-field", { scale: 1.014, duration: 0.07, ease: "power2.out" }, 2.2);
+      tl.to("#rail-field", { scale: 1, duration: 0.1, ease: "power3.in" }, 2.28);
+      tl.to("#rail-field", { scale: 1.006, duration: 0.14, ease: "sine.inOut" }, 4.12);
+      tl.to("#rail-field", { scale: 1, duration: 0.14, ease: "sine.inOut" }, 4.26);
+      tl.to("#rail-field", { scale: 1.03, duration: 0.13, ease: "power3.out" }, 5);
+      tl.to("#rail-field", { scale: 1, duration: 0.18, ease: "power2.in" }, 5.13);
+      tl.to("#rail-field", { scale: 1.008, duration: 1.2, repeat: 1, yoyo: true, ease: "sine.inOut" }, 6);
+
+      // Adapted kinetic slam: clipped to the upper 18..86 px band, readable for 0.45 s.
+      tl.fromTo(
+        "#word-motion",
+        { autoAlpha: 0, scale: 1.45 },
+        { autoAlpha: 1, scale: 1, duration: 0.18, ease: "back.out(1.35)" },
+        2.1,
+      );
+      tl.to("#word-stack", { x: -3, duration: 0.035, ease: "none" }, 2.28);
+      tl.to("#word-stack", { x: 2, duration: 0.035, ease: "none" }, 2.315);
+      tl.to("#word-stack", { x: 0, duration: 0.05, ease: "none" }, 2.35);
+
+      // One finite diagonal white shine, adapted from the installed shimmer-sweep concept.
+      tl.fromTo("#shine-mask", { x: -36 }, { x: 288, duration: 0.267, ease: "power1.inOut" }, 2.4);
+      tl.fromTo("#shine-text", { x: 36 }, { x: -288, duration: 0.267, ease: "power1.inOut" }, 2.4);
+
+      tl.to("#word-motion", { autoAlpha: 0, scale: 1.08, duration: 0.17, ease: "power3.in" }, 2.73);
+      tl.set("#word-motion", { opacity: 0, visibility: "hidden" }, 2.9);
+
+      // Gold is fully settled by 4.40 s; the host can freeze safely at 4.55 s.
+      // No rainbow tween begins before the winning resume boundary at 4.667 s.
+      tl.seek(0);
+      window.__timelines["pachinko-liquid-reach"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-08-13T05:35:20.895Z",
+  "board": {
+    "id": "eva15_inspired_physics_v2",
+    "version": "2.10.4-hanemono-calibrated",
+    "hash": "32a4fc0bf6c292eb61bce8f4688ed502be241c87ba1b02f2ebcf045c94e427fe",
+    "wingCount": 3,
+    "enabledWingCount": 3
+  },
+  "domains": {
+    "boardGeometry": "PASS_VALIDATED_SCHEMA_AND_CLEARANCE",
+    "payoutCalibration": "PASS_17_PER_125_TRAIN_AND_HOLDOUT",
+    "ballPhysics": "PASS",
+    "launcher": "PASS_CONFIGURED",
+    "sensors": "PASS_INSTRUMENTED",
+    "hanemono": "PASS",
+    "movingObjects": "PASS_SHARED_TRANSFORM",
+    "liquidPresentation": "PASS_TIMELINE",
+    "reach": "PASS_CONTRACT_TESTED",
+    "audio": "PASS_LOCAL_CUES",
+    "ux": "PASS_AUTOFIRE_PUSH_HOLDS",
+    "productQuality": "PASS_BATCH_SMOKE"
+  },
+  "batches": [
+    {
+      "balls": 100,
+      "startRate": 0.1,
+      "outRate": 0.87,
+      "averageLifetime": 1.7387916666666674,
+      "averageCollisionCount": 38.51,
+      "maxVelocity": 3.5360000000000005,
+      "timeoutCount": 0,
+      "remainingBodies": 0
+    },
+    {
+      "balls": 1000,
+      "startRate": 0.144,
+      "outRate": 0.803,
+      "averageLifetime": 1.6935416666666645,
+      "averageCollisionCount": 37.352,
+      "maxVelocity": 3.5360000000000005,
+      "timeoutCount": 0,
+      "remainingBodies": 0
+    },
+    {
+      "balls": 10000,
+      "startRate": 0.1281,
+      "outRate": 0.8003,
+      "averageLifetime": 1.6771754166666335,
+      "averageCollisionCount": 36.7888,
+      "maxVelocity": 3.5360000000000005,
+      "timeoutCount": 0,
+      "remainingBodies": 0
+    }
+  ],
+  "geometry": {
+    "minimumNailSurfaceClearance": 11.761470508735444,
+    "ballDiameter": 11
+  },
+  "calibration": {
+    "status": "PASS",
+    "targetBasis": "USER_SUPPLIED_17_ROTATIONS_PER_125_LAUNCHED_BALLS",
+    "targetStartRate": 0.136,
+    "tolerance": 0.01,
+    "calibrationStartRate": 0.137,
+    "holdoutStartRate": 0.1456,
+    "calibrationRuns": [
+      {
+        "seed": 1,
+        "balls": 1000,
+        "startWins": 137,
+        "startRate": 0.137,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 7,
+        "balls": 1000,
+        "startWins": 143,
+        "startRate": 0.143,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 21,
+        "balls": 1000,
+        "startWins": 123,
+        "startRate": 0.123,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 123456,
+        "balls": 1000,
+        "startWins": 144,
+        "startRate": 0.144,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 987654321,
+        "balls": 1000,
+        "startWins": 138,
+        "startRate": 0.138,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      }
+    ],
+    "holdoutRuns": [
+      {
+        "seed": 2,
+        "balls": 1000,
+        "startWins": 144,
+        "startRate": 0.144,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 11,
+        "balls": 1000,
+        "startWins": 144,
+        "startRate": 0.144,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 42,
+        "balls": 1000,
+        "startWins": 143,
+        "startRate": 0.143,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 654321,
+        "balls": 1000,
+        "startWins": 137,
+        "startRate": 0.137,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      },
+      {
+        "seed": 2147483647,
+        "balls": 1000,
+        "startWins": 160,
+        "startRate": 0.16,
+        "timeoutCount": 0,
+        "remainingBodies": 0
+      }
+    ]
+  }
+}

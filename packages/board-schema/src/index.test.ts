@@ -21,6 +21,18 @@ describe("board schema", () => {
     expect(gramsToKilograms(5.55)).toBe(0.00555);
   });
 
+  it("keeps an arc rail continuous in SI instead of exploding it into capsule segments", () => {
+    const board = parseBoard({
+      ...minimalBoard,
+      arcRails: [{ id: "arc", center: { x: 250, y: 250 }, radius: 100, startAngleDegrees: -45, endAngleDegrees: 45, segments: 16, thickness: 4, friction: 0.1, restitution: 0.3 }],
+    });
+    const si = toSI(board);
+    expect(si.rails).toHaveLength(0);
+    expect(si.arcRails).toHaveLength(1);
+    expect(si.arcRails[0]?.radius).toBe(0.1);
+    expect(si.arcRails[0]?.thickness).toBe(0.004);
+  });
+
   it("rejects invalid board data and duplicate ids", () => {
     expect(boardSchema.safeParse({ ...minimalBoard, units: "pixels" }).success).toBe(false);
     const duplicate = { ...minimalBoard, nails: [
@@ -33,5 +45,15 @@ describe("board schema", () => {
   it.each(["THROUGH", "ELECTRIC_SUPPORT", "ATTACKER"] as const)("accepts the %s right-play sensor role", (role) => {
     const parsed = parseBoard({ ...minimalBoard, sensors: [{ id: role.toLowerCase(), role, center: { x: 400, y: 300 }, width: 12, height: 12 }] });
     expect(parsed.sensors[0]?.role).toBe(role);
+  });
+
+  it("validates optional WARP destinations without changing detection-only sensors", () => {
+    const sensors = [
+      { id: "warp", role: "WARP", center: { x: 100, y: 100 }, width: 10, height: 10, warp: { destinationSensorId: "destination", destinationOffset: { x: 0, y: 12 }, velocityMode: "PRESERVE" } },
+      { id: "destination", role: "ROUTE_RIGHT", center: { x: 400, y: 300 }, width: 10, height: 10 },
+    ];
+    expect(parseBoard({ ...minimalBoard, sensors }).sensors[0]?.warp?.destinationSensorId).toBe("destination");
+    expect(boardSchema.safeParse({ ...minimalBoard, sensors: [{ ...sensors[0], warp: { ...sensors[0]?.warp, destinationSensorId: "missing" } }] }).success).toBe(false);
+    expect(parseBoard({ ...minimalBoard, sensors: [{ id: "detect-only", role: "WARP", center: { x: 100, y: 100 }, width: 10, height: 10 }] }).sensors[0]?.warp).toBeUndefined();
   });
 });

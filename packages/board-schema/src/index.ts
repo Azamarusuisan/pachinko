@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { millimetersToMeters, worldMmToPhysics } from "./transform.js";
+export * from "./transform.js";
 
 const id = z.string().min(1).regex(/^[a-zA-Z0-9_-]+$/);
 const finite = z.number().finite();
@@ -30,7 +32,7 @@ export const arcRailSchema = z.strictObject({
 });
 
 export const mechanismColliderSchema = segmentSchema.extend({
-  bodyType: z.enum(["FIXED", "KINEMATIC"]),
+  bodyType: z.enum(["FIXED", "KINEMATIC", "DYNAMIC"]),
 });
 
 export const nailSchema = z.strictObject({
@@ -49,6 +51,11 @@ export const sensorSchema = z.strictObject({
   center: pointSchema,
   width: positive,
   height: positive,
+  warp: z.strictObject({
+    destinationSensorId: id,
+    destinationOffset: pointSchema.default({ x: 0, y: 0 }),
+    velocityMode: z.enum(["PRESERVE", "RESET"]).default("PRESERVE"),
+  }).optional(),
 });
 
 export const boardSchema = z.strictObject({
@@ -69,6 +76,8 @@ export const boardSchema = z.strictObject({
     gravity: positive,
     gravityScale: positive,
     physicsHz: z.union([z.literal(120), z.literal(240), z.literal(480)]),
+    substeps: z.number().int().min(1).max(32).default(1),
+    ccdEnabled: z.boolean().default(true),
     linearDamping: nonnegative,
     angularDamping: nonnegative,
     maxBallLifetimeSeconds: positive,
@@ -77,10 +86,12 @@ export const boardSchema = z.strictObject({
   ball: z.strictObject({
     diameter: positive,
     massGrams: positive,
+    maxVelocity: positive.nullable().default(null),
     ...material,
   }),
   launcher: z.strictObject({
     position: pointSchema,
+    strength: z.number().min(0).max(1).default(0.68),
     angleDegrees: finite,
     minVelocity: nonnegative,
     maxVelocity: positive,
@@ -99,6 +110,9 @@ export const boardSchema = z.strictObject({
     id,
     adapter: z.string().min(1),
     enabled: z.boolean(),
+    pivot: pointSchema.optional(),
+    massGrams: positive.default(5),
+    angularDamping: nonnegative.default(0.8),
     angularVelocityDegreesPerSecond: finite.default(0),
     motion: z.enum(["ROTATE", "OSCILLATE"]).default("ROTATE"),
     oscillationAmplitudeDegrees: nonnegative.default(0),
@@ -126,10 +140,20 @@ export const boardSchema = z.strictObject({
       if (colliderIds.has(collider.id)) context.addIssue({ code: "custom", message: `Duplicate mechanism collider id: ${mechanism.id}/${collider.id}` });
       colliderIds.add(collider.id);
     }
+    const dynamicCount = mechanism.colliders.filter((collider) => collider.bodyType === "DYNAMIC").length;
+    if (dynamicCount > 0 && dynamicCount !== mechanism.colliders.length) context.addIssue({ code: "custom", message: `Dynamic mechanism cannot mix body types: ${mechanism.id}` });
+    if (dynamicCount > 0 && mechanism.pivot === undefined) context.addIssue({ code: "custom", message: `Dynamic mechanism requires a pivot: ${mechanism.id}` });
   }
   const [left, right] = board.board.routeBoundariesX;
   if (!(left < right && left >= 0 && right <= board.board.width)) {
     context.addIssue({ code: "custom", message: "Invalid route boundaries" });
+  }
+  const sensorIds = new Set(board.sensors.map((sensor) => sensor.id));
+  for (const sensor of board.sensors) {
+    if (sensor.warp === undefined) continue;
+    if (sensor.role !== "WARP") context.addIssue({ code: "custom", message: `Warp config requires WARP role: ${sensor.id}` });
+    if (!sensorIds.has(sensor.warp.destinationSensorId)) context.addIssue({ code: "custom", message: `Unknown warp destination: ${sensor.warp.destinationSensorId}` });
+    if (sensor.warp.destinationSensorId === sensor.id) context.addIssue({ code: "custom", message: `Warp cannot target itself: ${sensor.id}` });
   }
 });
 
@@ -147,15 +171,28 @@ export interface SegmentMeters {
   readonly friction: number;
   readonly restitution: number;
 }
+export interface ArcRailMeters {
+  readonly id: string;
+  readonly center: PointMeters;
+  readonly radius: number;
+  readonly startAngleRadians: number;
+  readonly endAngleRadians: number;
+  readonly segments: number;
+  readonly thickness: number;
+  readonly friction: number;
+  readonly restitution: number;
+}
 export interface BoardSI {
   readonly source: BoardDefinition;
   readonly width: number;
   readonly height: number;
   readonly routeBoundariesX: readonly [number, number];
   readonly gravity: number;
-  readonly ball: { readonly radius: number; readonly mass: number; readonly friction: number; readonly restitution: number };
+  readonly physics: { readonly substeps: number; readonly ccdEnabled: boolean; readonly linearDamping: number; readonly angularDamping: number };
+  readonly ball: { readonly radius: number; readonly mass: number; readonly friction: number; readonly restitution: number; readonly maxVelocity: number | null };
   readonly launcher: {
     readonly position: PointMeters;
+    readonly strength: number;
     readonly angleRadians: number;
     readonly minVelocity: number;
     readonly maxVelocity: number;
@@ -163,29 +200,29 @@ export interface BoardSI {
   };
   readonly nails: readonly (NailDefinition & { readonly xMeters: number; readonly yMeters: number; readonly radiusMeters: number })[];
   readonly rails: readonly SegmentMeters[];
+  readonly arcRails: readonly ArcRailMeters[];
   readonly walls: readonly SegmentMeters[];
-  readonly sensors: readonly (SensorDefinition & { readonly centerMeters: PointMeters; readonly widthMeters: number; readonly heightMeters: number })[];
+  readonly sensors: readonly (SensorDefinition & { readonly centerMeters: PointMeters; readonly widthMeters: number; readonly heightMeters: number; readonly warpMeters?: { readonly destinationSensorId: string; readonly destinationOffset: PointMeters; readonly velocityMode: "PRESERVE" | "RESET" } })[];
   readonly gates: readonly (SegmentMeters & { readonly enabled: boolean; readonly collisionMode: "BIDIRECTIONAL" | "UPWARD_ONLY" })[];
   readonly mechanisms: readonly {
     readonly id: string;
     readonly adapter: string;
+    readonly pivotMeters?: PointMeters;
+    readonly mass: number;
+    readonly angularDamping: number;
     readonly angularVelocityRadiansPerSecond: number;
     readonly motion: "ROTATE" | "OSCILLATE";
     readonly oscillationAmplitudeRadians: number;
     readonly oscillationFrequencyHz: number;
     readonly phaseRadians: number;
-    readonly colliders: readonly (SegmentMeters & { readonly bodyType: "FIXED" | "KINEMATIC" })[];
+    readonly colliders: readonly (SegmentMeters & { readonly bodyType: "FIXED" | "KINEMATIC" | "DYNAMIC" })[];
   }[];
 }
 
-export const millimetersToMeters = (value: number): number => value / 1000;
 export const gramsToKilograms = (value: number): number => value / 1000;
 export const degreesToRadians = (value: number): number => value * Math.PI / 180;
 
-const convertPoint = (point: { x: number; y: number }): PointMeters => ({
-  x: millimetersToMeters(point.x),
-  y: millimetersToMeters(point.y),
-});
+const convertPoint = (point: { x: number; y: number }): PointMeters => worldMmToPhysics(point);
 
 const convertSegment = (segment: z.infer<typeof segmentSchema>): SegmentMeters => ({
   id: segment.id,
@@ -209,46 +246,39 @@ export function createBoardTemplate(overrides: Partial<BoardDefinition> = {}): B
     board: { width: 500, height: 500, routeBoundariesX: [170, 330] },
     physics: {
       gravity: 9.80665, gravityScale: 1, physicsHz: 240, linearDamping: 0, angularDamping: 0,
+      substeps: 1, ccdEnabled: true,
       maxBallLifetimeSeconds: 10, terminalRetentionSeconds: 0,
     },
-    ball: { diameter: 11, massGrams: 5.55, friction: 0.1, restitution: 0.4 },
-    launcher: { position: { x: 20, y: 450 }, angleDegrees: -90, minVelocity: 0, maxVelocity: 5, angleJitterDegrees: 0 },
+    ball: { diameter: 11, massGrams: 5.55, maxVelocity: null, friction: 0.1, restitution: 0.4 },
+    launcher: { position: { x: 20, y: 450 }, strength: 0.68, angleDegrees: -90, minVelocity: 0, maxVelocity: 5, angleJitterDegrees: 0 },
     nails: [], rails: [], arcRails: [], walls: [], sensors: [], gates: [], mechanisms: [],
   };
   return parseBoard({ ...base, ...overrides });
 }
 
 export function toSI(board: BoardDefinition): BoardSI {
-  const arcSegments = board.arcRails.flatMap((arc) => {
-    const start = degreesToRadians(arc.startAngleDegrees);
-    const end = degreesToRadians(arc.endAngleDegrees);
-    return Array.from({ length: arc.segments }, (_, index) => {
-      const a = start + (end - start) * index / arc.segments;
-      const b = start + (end - start) * (index + 1) / arc.segments;
-      return convertSegment({
-        id: `${arc.id}-${String(index + 1).padStart(2, "0")}`,
-        from: { x: arc.center.x + Math.cos(a) * arc.radius, y: arc.center.y + Math.sin(a) * arc.radius },
-        to: { x: arc.center.x + Math.cos(b) * arc.radius, y: arc.center.y + Math.sin(b) * arc.radius },
-        thickness: arc.thickness,
-        friction: arc.friction,
-        restitution: arc.restitution,
-      });
-    });
-  });
   return {
     source: board,
     width: millimetersToMeters(board.board.width),
     height: millimetersToMeters(board.board.height),
     routeBoundariesX: board.board.routeBoundariesX.map(millimetersToMeters) as [number, number],
     gravity: board.physics.gravity * board.physics.gravityScale,
+    physics: {
+      substeps: board.physics.substeps,
+      ccdEnabled: board.physics.ccdEnabled,
+      linearDamping: board.physics.linearDamping,
+      angularDamping: board.physics.angularDamping,
+    },
     ball: {
       radius: millimetersToMeters(board.ball.diameter / 2),
       mass: gramsToKilograms(board.ball.massGrams),
+      maxVelocity: board.ball.maxVelocity,
       friction: board.ball.friction,
       restitution: board.ball.restitution,
     },
     launcher: {
       position: convertPoint(board.launcher.position),
+      strength: board.launcher.strength,
       angleRadians: degreesToRadians(board.launcher.angleDegrees),
       minVelocity: board.launcher.minVelocity,
       maxVelocity: board.launcher.maxVelocity,
@@ -260,18 +290,33 @@ export function toSI(board: BoardDefinition): BoardSI {
       yMeters: millimetersToMeters(nail.positionY),
       radiusMeters: millimetersToMeters(nail.radius),
     })),
-    rails: [...board.rails.map(convertSegment), ...arcSegments],
+    rails: board.rails.map(convertSegment),
+    arcRails: board.arcRails.map((arc) => ({
+      id: arc.id,
+      center: convertPoint(arc.center),
+      radius: millimetersToMeters(arc.radius),
+      startAngleRadians: degreesToRadians(arc.startAngleDegrees),
+      endAngleRadians: degreesToRadians(arc.endAngleDegrees),
+      segments: arc.segments,
+      thickness: millimetersToMeters(arc.thickness),
+      friction: arc.friction,
+      restitution: arc.restitution,
+    })),
     walls: board.walls.map(convertSegment),
     sensors: board.sensors.map((sensor) => ({
       ...sensor,
       centerMeters: convertPoint(sensor.center),
       widthMeters: millimetersToMeters(sensor.width),
       heightMeters: millimetersToMeters(sensor.height),
+      ...(sensor.warp === undefined ? {} : { warpMeters: { destinationSensorId: sensor.warp.destinationSensorId, destinationOffset: convertPoint(sensor.warp.destinationOffset), velocityMode: sensor.warp.velocityMode } }),
     })),
     gates: board.gates.map((gate) => ({ ...convertSegment(gate), enabled: gate.enabled, collisionMode: gate.collisionMode })),
     mechanisms: board.mechanisms.filter((mechanism) => mechanism.enabled).map((mechanism) => ({
       id: mechanism.id,
       adapter: mechanism.adapter,
+      ...(mechanism.pivot === undefined ? {} : { pivotMeters: convertPoint(mechanism.pivot) }),
+      mass: gramsToKilograms(mechanism.massGrams),
+      angularDamping: mechanism.angularDamping,
       angularVelocityRadiansPerSecond: degreesToRadians(mechanism.angularVelocityDegreesPerSecond),
       motion: mechanism.motion,
       oscillationAmplitudeRadians: degreesToRadians(mechanism.oscillationAmplitudeDegrees),
