@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*", "tools/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
   "scripts": {
     "setup:blender": "bash tools/setup-blender-mcp.sh",
     "generate:glb": "node tools/generate-visual-glb.mjs",
@@ -48,7 +52,14 @@
     "tsx": "4.20.5",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",
-    "vite": "7.1.3",
-    "vitest": "3.2.4"
+    "vite": "7.3.7",
+    "vitest": "4.1.12"
+  },
+  "overrides": {
+    "playwright@1.55.0": "1.55.1",
+    "vite": "$vite",
+    "vitest": "$vitest",
+    "esbuild": "0.28.2",
+    "postcss": "8.5.23"
   }
 }
