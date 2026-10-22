@@ -1,0 +1,37 @@
+name: Dependency validation
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      WRANGLER_SEND_METRICS: false
+      AI_PROVIDER: mock
+      DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+      AUTH_SECRET: build-only-placeholder-not-a-production-secret
+      AUTH_URL: https://example.invalid
+      NEXT_PUBLIC_APP_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: build-only-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: build-only-placeholder
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+      - name: Isolate build configuration
+        run: find . -type f -name '.env*' -delete
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate dependency consumers
+        run: |
+          npm run typecheck
+          npm run build
